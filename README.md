@@ -1,26 +1,28 @@
 # WaveBird
 
-This fork adds **USB support for the Turtle Beach Afterglow Wave Wireless
+This fork adds **Bluetooth Classic and USB input for the Turtle Beach Afterglow Wave Wireless
 Controller for Switch 2 (`0E6F:0194`)**. The upstream DMG does not contain this
 backend. Build this fork with `Tools/build-local.sh`; the separate development
 app is written to `build/WaveBird Afterglow.app`.
 
-**Signing requirement:** the default local build can diagnose USB input but
+**Signing requirement:** the default local build can diagnose physical input but
 cannot publish a virtual gamepad. macOS requires an Apple-approved virtual-HID
 entitlement and provisioning profile. Accessibility permission alone is not
 enough. A properly signed build of this fork is needed for games.
 
 The input transport uses Apple's **CoreHID** library, then feeds the existing
 WaveBird output profiles. No controller firmware changes or Nintendo USB
-initialization commands are used. See [Afterglow USB support](docs/afterglow-usb.md)
-for the supported controls and hardware-validation status.
+initialization commands are used. See [Bluetooth support](docs/afterglow-bluetooth.md),
+[USB support](docs/afterglow-usb.md), and [Apple signing setup](docs/macos-signing.md)
+for controls and validation status.
 
 A macOS app that bridges Nintendo Switch 2 controllers to a virtual HID gamepad,
-so games and other apps can use them as standard controllers. Tested with Apple
+so games and other apps can use them as standard controllers. The upstream output
+profiles have been tested with Apple
 Game Controller framework apps, SDL-based apps (Steam, Dolphin), and the web
 Gamepad API.
 
-Switch 2 controllers don't pair via the standard Bluetooth Security Manager
+Nintendo-manufactured Switch 2 controllers don't pair via the standard Bluetooth Security Manager
 Protocol and don't expose HID over GATT — they speak Nintendo's proprietary
 profile over a vendor BLE service. macOS therefore can't pair or use them
 natively. WaveBird connects via CoreBluetooth, parses the proprietary report
@@ -47,9 +49,40 @@ Early. Currently supports:
   Its USB report does not expose motion or separate C/GL/GR inputs. USB rumble
   is not implemented.
 
-Not yet supported: Nintendo controllers over USB, Charging Grip, and Afterglow
-wireless connections. Other licensed controller models need their own verified
+- **Afterglow Wave Wireless Controller for Switch 2 (`0E6F:0194`) over Bluetooth Classic** —
+  paired as `Lic3 Pro Controller`, with both sticks, face buttons, D-pad, shoulders,
+  triggers and system-button decoding. Each controller has its own input stream
+  and persistent identity; initialization assigns a player light and full report
+  mode. Rumble and motion are not implemented. See [hardware validation](docs/afterglow-bluetooth.md).
+
+Not yet supported: Nintendo controllers over USB and Charging Grip. Other licensed controller models need their own verified
 VID/PID and input profile.
+
+### Afterglow wireless development
+
+The target is four independent Turtle Beach wireless controllers, each exposed
+as a standard gamepad to games with controller support. Bluetooth input and
+initialization have been verified on one physical controller. System-wide game
+output from this fork still requires Apple-approved signing. The tested unit
+advertises as **Lic3 Pro Controller** over Bluetooth Classic; the new input
+backend is separate from WaveBird's Nintendo BLE backend.
+
+To capture its Bluetooth identity and reports without virtual-HID signing:
+
+```sh
+swiftc Tools/AfterglowBluetoothProbe.swift -o /tmp/afterglow-bluetooth-probe
+/tmp/afterglow-bluetooth-probe --pair --seconds 120
+```
+
+Unplug USB and hold SYNC beside USB-C for 3 seconds. The probe pairs only the
+observed `Lic3 Pro Controller` name, reports SDP/HID identities when available,
+and checks whether macOS GameController recognizes the physical controller.
+Without `--pair`, it only observes. The app also pairs this model automatically
+when it sees it in SYNC mode. See the validation document for the current
+four-controller and game-output test status.
+
+For the separate virtual-output signing setup, see
+[the Apple capability request and signing guide](docs/macos-signing.md).
 
 ## Upstream releases (without this fork's USB support)
 

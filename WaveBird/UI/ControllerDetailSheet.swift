@@ -44,8 +44,9 @@ struct ControllerDetailSheet: View {
         let rightPaired = rightRecord?.serial.flatMap { coordinator.knownControllers[$0] }
         let productID = paired?.productID ?? live?.advertisement.productID
         let sourceProfile = live?.profile ?? productID.flatMap { coordinator.profile(forProductID: $0) }
-        let isUSB = live?.id.transport == .usb || (sourceProfile?.usbMatcher != nil && sourceProfile?.bleMatcher == nil)
         let serial = paired?.serial ?? live?.serial
+        let isUSB = live?.id.transport == .usb || (live == nil && serial?.hasPrefix("usb-") == true)
+        let isBluetoothHID = live?.id.transport == .bluetoothHID || serial?.hasPrefix("bluetooth-") == true
         // While paired, both Joy-Con motors read from a single shared
         // RumbleSettings so the one card on screen drives both sides. Solo
         // settings are keyed by serial; productID only feeds the isGameCube flag.
@@ -82,7 +83,7 @@ struct ControllerDetailSheet: View {
                     generalTab(live: live, paired: paired, xbox: xboxSettings)
                 case .haptics:
                     if sourceProfile?.supportsRumble == false {
-                        Text("Rumble is not available for this controller over USB.")
+                        Text("Rumble is not implemented for this controller.")
                             .foregroundStyle(.secondary)
                             .padding(24)
                     } else {
@@ -96,7 +97,7 @@ struct ControllerDetailSheet: View {
                             connectionState: connectionState
                         )
                     } else {
-                        aboutTab(displayName: displayName, serial: serial, paired: paired, connectionState: connectionState, isUSB: isUSB)
+                        aboutTab(displayName: displayName, serial: serial, paired: paired, connectionState: connectionState, isUSB: isUSB, isBluetoothHID: isBluetoothHID)
                     }
                 }
             }
@@ -210,14 +211,14 @@ struct ControllerDetailSheet: View {
     }
 
     @ViewBuilder
-    private func aboutTab(displayName: String, serial: String?, paired: KnownController?, connectionState: DeviceConnectionState?, isUSB: Bool) -> some View {
+    private func aboutTab(displayName: String, serial: String?, paired: KnownController?, connectionState: DeviceConnectionState?, isUSB: Bool, isBluetoothHID: Bool) -> some View {
         Form {
             Section {
                 LabeledContent("Device Type") {
                     Text(displayName)
                 }
                 if let serial {
-                    LabeledContent(isUSB ? "Device Identifier" : "Serial Number") {
+                    LabeledContent(isUSB || isBluetoothHID ? "Device Identifier" : "Serial Number") {
                         Text(serial)
                             .monospaced()
                             .foregroundStyle(.secondary)
@@ -229,8 +230,8 @@ struct ControllerDetailSheet: View {
                 }
             } footer: {
                 if connectionState != .ready {
-                    Text(isUSB
-                         ? "Reconnect the controller’s USB cable."
+                    Text(isUSB ? "Reconnect the controller’s USB cable."
+                         : isBluetoothHID ? "Press Home to reconnect. To pair again, hold SYNC beside USB-C for 3 seconds. macOS lists this controller as Lic3 Pro Controller."
                          : "Press any button on the controller to reconnect. If it's not advertising, hold SYNC to wake it up.")
                 }
             }

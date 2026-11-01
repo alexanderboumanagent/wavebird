@@ -5,6 +5,7 @@ protocol ControllerProfile: Sendable {
     var name: String { get }
     var bleMatcher: BLEMatcher? { get }
     var usbMatcher: USBMatcher? { get }
+    var bluetoothHIDMatcher: BluetoothHIDMatcher? { get }
     var supportsRumble: Bool { get }
 
     var hidVendorID: UInt16 { get }
@@ -12,6 +13,7 @@ protocol ControllerProfile: Sendable {
 
     func parseBLEReport(_ data: Data, calibration: ControllerCalibration) -> ControllerState?
     func parseUSBReport(_ data: Data, reportID: UInt8, calibration: ControllerCalibration) -> ControllerState?
+    func parseBluetoothHIDReport(_ data: Data, reportID: UInt8, calibration: ControllerCalibration) -> ControllerState?
 
     // Encode a normalized RumbleCommand into a BLE vibration payload for this
     // controller. `sequence` is a coordinator-managed counter the encoder folds
@@ -39,6 +41,8 @@ protocol ControllerProfile: Sendable {
 }
 
 extension ControllerProfile {
+    var bluetoothHIDMatcher: BluetoothHIDMatcher? { nil }
+    func parseBluetoothHIDReport(_ data: Data, reportID: UInt8, calibration: ControllerCalibration) -> ControllerState? { nil }
     var supportsRumble: Bool { true }
     func encodeRumble(_ cmd: RumbleCommand, sequence: UInt8, settings: RumbleSettings.Snapshot) -> Data? { nil }
 
@@ -198,4 +202,23 @@ struct USBInitStep: Sendable {
 enum TransportMatcher: Sendable {
     case ble(BLEMatcher)
     case usb(USBMatcher)
+    case bluetoothHID(BluetoothHIDMatcher)
+}
+
+struct BluetoothHIDMatcher: Sendable {
+    let vendorID: UInt16
+    let productID: UInt16
+    let pairingName: String
+
+    func matches(vendorID: UInt16, productID: UInt16) -> Bool {
+        self.vendorID == vendorID && self.productID == productID
+    }
+
+    static func persistentIdentity(vendorID: UInt16, productID: UInt16, serial: String?, uniqueID: String?) -> String? {
+        // macOS supplies this controller's Bluetooth address as its HID serial.
+        // Never fall back to a port or product name: four identical pads must
+        // retain distinct settings after reconnecting in a different order.
+        guard let address = [serial, uniqueID].compactMap({ $0 }).first(where: { !$0.isEmpty }) else { return nil }
+        return String(format: "bluetooth-%04X-%04X-", vendorID, productID) + address.uppercased()
+    }
 }

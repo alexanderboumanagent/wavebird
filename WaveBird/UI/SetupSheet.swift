@@ -14,7 +14,7 @@ struct SetupSheet: View {
                     .foregroundStyle(.tertiary)
                 Text("Set up Game Controller")
                     .font(.headline)
-                Text("Connect a supported USB controller, or hold SYNC on a Nintendo Switch 2 controller to pair over Bluetooth.")
+                Text("Hold SYNC on a Nintendo Switch 2 controller to connect. For a Turtle Beach Afterglow Wave, unplug USB and hold SYNC beside USB-C for 3 seconds. Up to four Afterglow controllers can connect wirelessly. You can also connect a supported controller over USB.")
                     .font(.callout)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)

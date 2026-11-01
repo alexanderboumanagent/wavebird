@@ -65,7 +65,7 @@ else:
         'CFBundleShortVersionString': '0.9.0-afterglow-dev',
         'CFBundleVersion': '1',
         'LSMinimumSystemVersion': '15.0',
-        'NSBluetoothAlwaysUsageDescription': 'WaveBird connects to supported Nintendo controllers over Bluetooth.',
+        'NSBluetoothAlwaysUsageDescription': 'WaveBird connects to supported Nintendo and Turtle Beach controllers over Bluetooth.',
         'NSHumanReadableCopyright': 'Copyright 2026 WaveBird contributors. MIT license.',
     }
     (bundle / 'Contents' / 'Info.plist').write_bytes(plistlib.dumps(info))
@@ -80,7 +80,7 @@ subprocess.run([
 ], check=True)
 
 # macOS rejects ad-hoc signatures that claim the restricted virtual-HID
-# entitlement. A diagnostic can read USB, but cannot emulate a gamepad.
+# entitlement. A diagnostic can read physical input, but cannot emulate a gamepad.
 sign_command = ['codesign', '--force', '--sign', args.identity or '-']
 if signing_entitlements:
     shutil.copyfile(args.profile, bundle / 'Contents' / 'embedded.provisionprofile')

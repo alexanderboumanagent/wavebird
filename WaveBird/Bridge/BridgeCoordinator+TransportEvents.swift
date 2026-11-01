@@ -38,6 +38,7 @@ extension BridgeCoordinator {
                 switch kind {
                 case .ble: parsed = profile.parseBLEReport(raw.data, calibration: calibration)
                 case .usb: parsed = profile.parseUSBReport(raw.data, reportID: raw.reportID ?? 0, calibration: calibration)
+                case .bluetoothHID: parsed = profile.parseBluetoothHIDReport(raw.data, reportID: raw.reportID ?? 0, calibration: calibration)
                 }
                 guard let parsed else { continue }
                 let state = parsed.applyingMapping(mapBox.current)
@@ -91,6 +92,7 @@ extension BridgeCoordinator {
                 switch kind {
                 case .ble: parsed = profile.parseBLEReport(raw.data, calibration: calibration)
                 case .usb: parsed = profile.parseUSBReport(raw.data, reportID: raw.reportID ?? 0, calibration: calibration)
+                case .bluetoothHID: parsed = profile.parseBluetoothHIDReport(raw.data, reportID: raw.reportID ?? 0, calibration: calibration)
                 }
                 guard let state = parsed else { continue }
                 if pair.leftID == id { pair.leftState = state }
@@ -391,6 +393,8 @@ extension BridgeCoordinator {
             return profiles.first { $0.bleMatcher?.productID == info.productID }
         case .usb:
             return profiles.first { $0.usbMatcher?.matches(vendorID: info.vendorID, productID: info.productID) == true }
+        case .bluetoothHID:
+            return profiles.first { $0.bluetoothHIDMatcher?.matches(vendorID: info.vendorID, productID: info.productID) == true }
         }
     }
 }

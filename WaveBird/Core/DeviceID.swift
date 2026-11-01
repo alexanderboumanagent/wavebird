@@ -3,6 +3,7 @@ import Foundation
 enum TransportKind: Sendable, Hashable {
     case ble
     case usb
+    case bluetoothHID
 }
 
 struct DeviceID: Sendable, Hashable {

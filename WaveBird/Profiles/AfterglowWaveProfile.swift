@@ -7,6 +7,9 @@ struct AfterglowWaveProfile: ControllerProfile {
     var usbMatcher: USBMatcher? {
         USBMatcher(vendorID: 0x0E6F, productID: 0x0194, initWrites: [])
     }
+    var bluetoothHIDMatcher: BluetoothHIDMatcher? {
+        BluetoothHIDMatcher(vendorID: 0x0E6F, productID: 0x0194, pairingName: "Lic3 Pro Controller")
+    }
     let hidVendorID: UInt16 = 0x0E6F
     let hidProductID: UInt16 = 0x0194
 
@@ -20,5 +23,9 @@ struct AfterglowWaveProfile: ControllerProfile {
 
     func parseUSBReport(_ data: Data, reportID: UInt8, calibration: ControllerCalibration) -> ControllerState? {
         AfterglowUSBReport.decode(data, reportID: reportID)
+    }
+
+    func parseBluetoothHIDReport(_ data: Data, reportID: UInt8, calibration: ControllerCalibration) -> ControllerState? {
+        AfterglowBluetoothReport.decode(data, reportID: reportID)
     }
 }

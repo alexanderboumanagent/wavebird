@@ -350,7 +350,7 @@ final class BridgeCoordinator {
     // Used to render the right icon tint for offline rows (we don't have a
     // live DeviceRecord for those).
     func profile(forProductID pid: UInt16) -> (any ControllerProfile)? {
-        profiles.first { $0.bleMatcher?.productID == pid || $0.usbMatcher?.productID == pid }
+        profiles.first { $0.bleMatcher?.productID == pid || $0.usbMatcher?.productID == pid || $0.bluetoothHIDMatcher?.productID == pid }
     }
 
     // Returns whether this controller's serial is in our local paired dict.
@@ -421,6 +421,7 @@ final class BridgeCoordinator {
             var ms: [TransportMatcher] = []
             if let bm = p.bleMatcher { ms.append(.ble(bm)) }
             if let um = p.usbMatcher { ms.append(.usb(um)) }
+            if let hm = p.bluetoothHIDMatcher { ms.append(.bluetoothHID(hm)) }
             return ms
         }
     }

@@ -10,8 +10,8 @@ macOS app that bridges Nintendo Switch 2 controllers to a virtual HID gamepad. N
 ## Scope
 
 - **Shipped:** NSO/NS2 GameCube Controller, NS2 Pro Controller, and NS2 Joy-Con (L/R) over BLE, all with rumble. Joy-Cons work solo or as a merged L+R pair behind one virtual HID. LTK pairing (cmd 0x15) — paired controllers reconnect by pressing any button.
-- **Added in this fork:** Afterglow Wave Wireless Controller for Switch 2 (`0E6F:0194`) over USB. `Transports/USB/USBTransport.swift` uses CoreHID actors for input and feeds the existing output pipeline. Device metadata arrives through `.metadata`, not fake BLE command responses. Serial-less controllers persist settings per physical USB port. See `docs/afterglow-usb.md` for captured input format and hardware-test status.
-- **Deferred:** Nintendo controller USB initialization, Charging Grip and Afterglow Bluetooth. Do not send Nintendo initialization commands to licensed third-party controllers. The USB matcher must include both vendor and product IDs; output virtual devices use a different transport and are not admitted as physical USB input.
+- **Added in this fork:** Afterglow Wave Wireless Controller for Switch 2 (`0E6F:0194`) over USB. `Transports/USB/USBTransport.swift` uses CoreHID actors for input and feeds the existing output pipeline. Device metadata arrives through `.metadata`, not fake BLE command responses. Serial-less USB controllers persist settings per physical port. The same model now has a Bluetooth Classic HID backend in `Transports/BluetoothHID/`: standard IOBluetooth pairing, CoreHID reads, report 0x3F/0x30 parsing, and NS1 player-light/report-mode commands. Its HID serial is its Bluetooth address, so settings and output identity remain distinct for four identical controllers. See `docs/afterglow-usb.md` and `docs/afterglow-bluetooth.md` for captures and validation status.
+- **Deferred:** Nintendo controller USB initialization and Charging Grip. Do not send Nintendo Switch 2 BLE initialization commands to licensed third-party controllers. The Afterglow Bluetooth Classic model uses the older Switch Pro HID protocol, verified separately on hardware. The USB matcher must include both vendor and product IDs; output virtual devices use a different transport and are not admitted as physical USB input.
 
 ## Architecture (only the non-obvious bits — descriptive, not prescriptive)
 
@@ -165,7 +165,7 @@ If you see a better overall shape, propose it. Constraints on any rewrite: prese
 - The protocol facts and macOS workarounds in this file — hardware/OS constraints, not design.
 - User-visible invariants: paired controllers reconnect on a button press; per-serial settings survive updates; each shipping output mode keeps working in its known consumers (GameController apps, Steam, browsers, SDL/Dolphin).
 - Persisted UserDefaults keys and blob formats are user data. Migrate; never rename-and-lose.
-- The complexity budget: this is a small single-purpose utility with exactly two transports ever (BLE now, USB someday) and one developer. Design for that N, not for generality.
+- The complexity budget: this is a small single-purpose utility with three observed input transports (Nintendo BLE, USB HID, and licensed-controller Bluetooth Classic HID). The third path is required by the captured Lic3 Pro Controller, which is not BLE. Design for these concrete devices, not a general driver/plugin framework.
 
 ### Concurrency habits (Swift 6.2 strict, `nonisolated` default)
 
