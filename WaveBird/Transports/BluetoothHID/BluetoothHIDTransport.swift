@@ -167,6 +167,9 @@ actor BluetoothHIDTransport: Transport {
         }
         // Both commands acknowledged on 0E6F:0194 hardware, 2026-11-01.
         // Keep simple-report decoding available during initialization.
+        // SDL's HIDAPI_DriverSwitch_OpenJoystick waits for macOS to finish
+        // its own handshake before sending Switch subcommands.
+        try? await Task.sleep(for: .milliseconds(250))
         for command in AfterglowBluetoothCommands.initialize(player: slot) {
             guard reportTasks[id] != nil else { return }
             if !(await initialize(command, device: device, id: id)) {
