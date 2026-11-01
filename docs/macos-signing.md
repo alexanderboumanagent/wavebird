@@ -35,9 +35,9 @@ that approval. The upstream app's profile and certificate cannot sign this fork.
 > pairing, and CoreHID HIDDeviceClient for supported physical HID devices. It creates virtual gamepad
 > devices through CoreHID HIDVirtualDevice. The requested entitlement is
 > com.apple.developer.hid.virtual.device. It does not require a kernel extension
-> or disabling macOS security protections. Bluetooth pairing, initialization and changing input from the Turtle Beach
-> model have been verified on hardware, as has USB input capture. Four-controller
-> and game-output validation are tracked in the repository.
+> or disabling macOS security protections. Bluetooth pairing, initialization, four simultaneous physical-controller input
+> streams and a saved-pairing reconnect have been verified on hardware.
+> Virtual game-output validation is awaiting this entitlement approval.
 >
 > Please advise how to obtain this entitlement for Mac development and, if
 > supported, Developer ID distribution. The app will explain and request the

@@ -74,9 +74,13 @@ struct AfterglowBridgeProbe {
         var reports = 0
         var cycles = 0
         var identity: String?
+        var selectedID: DeviceID?
+        var modes: [UInt8: Int] = [:]
         for await event in transport.events {
             switch event {
             case .discovered(let id, _):
+                if selectedID == nil { selectedID = id }
+                guard selectedID == id else { continue }
                 do { try await transport.connect(id) }
                 catch { log("FAIL: \(error)"); exit(5) }
             case .metadata(_, let metadata):
@@ -95,13 +99,19 @@ struct AfterglowBridgeProbe {
                     exit(7)
                 }
                 reports += 1
+                modes[reportID ?? 0, default: 0] += 1
                 if reports % 100 == 0 {
                     cycles += 1
                     log("\(label) read/resubscribe cycle \(cycles) passed (\(reports) reports)")
                     await transport.disconnect(id)
                     await transport.stopDiscovery()
                     if cycles == 3 {
+                        if bluetooth, modes[0x30, default: 0] == 0 {
+                            log("FAIL: full report mode never became active.")
+                            exit(12)
+                        }
                         log("PASS: 300 \(label) reports decoded across three input subscriptions; identity remained stable.")
+                        log("Report modes: \(modes)")
                         return
                     }
                     await transport.startDiscovery(matchers: matchers)
@@ -122,6 +132,7 @@ struct AfterglowBridgeProbe {
         await transport.startDiscovery(matchers: [.bluetoothHID(profile.bluetoothHIDMatcher!)])
         var identities: [DeviceID: String] = [:]
         var counts: [DeviceID: Int] = [:]
+        var fullCounts: [DeviceID: Int] = [:]
         var lastStates: [DeviceID: InputSignature] = [:]
         var lastReports: [DeviceID: ContinuousClock.Instant] = [:]
         var passed = false
@@ -145,17 +156,18 @@ struct AfterglowBridgeProbe {
                     exit(11)
                 }
                 counts[id, default: 0] += 1
+                if reportID == 0x30 { fullCounts[id, default: 0] += 1 }
                 lastReports[id] = .now
                 if lastStates[id] != state.idleSignature {
                     lastStates[id] = state.idleSignature
                     log("\(identities[id] ?? "pending identity"): buttons=\(state.buttons.rawValue) left=\(state.leftStick) right=\(state.rightStick)")
                 }
                 if !passed, identities.count == 4, identities.keys.allSatisfy({
-                    counts[$0, default: 0] >= 100 &&
+                    fullCounts[$0, default: 0] >= 100 &&
                     (lastReports[$0].map { $0.duration(to: .now) < .seconds(1) } ?? false)
                 }) {
                     passed = true
-                    log("PASS: four distinct Bluetooth controllers simultaneously streamed at least 100 decoded reports each.")
+                    log("PASS: four distinct Bluetooth controllers simultaneously streamed at least 100 decoded full-mode reports each.")
                     if CommandLine.arguments.contains("--monitor") { continue }
                     for id in identities.keys { await transport.disconnect(id) }
                     await transport.stopDiscovery()
@@ -165,6 +177,7 @@ struct AfterglowBridgeProbe {
                 log("Disconnected \(identities[id] ?? "unknown"): \(reason)")
                 identities[id] = nil
                 counts[id] = nil
+                fullCounts[id] = nil
                 lastReports[id] = nil
                 passed = false
             case .error(_, let message): log("Bluetooth: \(message)")

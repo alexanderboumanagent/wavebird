@@ -12,8 +12,12 @@ final class BluetoothClassicPairer: NSObject, @preconcurrency CBCentralManagerDe
     private var inquiry: IOBluetoothDeviceInquiry!
     private var pairing: IOBluetoothDevicePair?
     private var names: Set<String> = []
+    private var matchers: [BluetoothHIDMatcher] = []
     private var wantsScan = false
     private var retry: Task<Void, Never>?
+    private var reconnectTask: Task<Void, Never>?
+    private var reconnecting: String?
+    private var reconnectAttempts: [String: Date] = [:]
     private let events: AsyncStream<TransportEvent>.Continuation
 
     init(events: AsyncStream<TransportEvent>.Continuation) {
@@ -25,16 +29,27 @@ final class BluetoothClassicPairer: NSObject, @preconcurrency CBCentralManagerDe
         central = CBCentralManager(delegate: self, queue: .main)
     }
 
-    func start(names: Set<String>) {
-        self.names = names
+    func start(matchers: [BluetoothHIDMatcher]) {
+        self.matchers = matchers
+        names = Set(matchers.map(\.pairingName))
         wantsScan = true
         startInquiry()
+        if reconnectTask == nil {
+            reconnectTask = Task { [weak self] in
+                while !Task.isCancelled {
+                    self?.reconnectKnownController()
+                    try? await Task.sleep(for: .seconds(5))
+                }
+            }
+        }
     }
 
     func stop() {
         wantsScan = false
         retry?.cancel()
         retry = nil
+        reconnectTask?.cancel()
+        reconnectTask = nil
         _ = inquiry.stop()
         if let pairing, !pairing.device().isPaired() { pairing.stop() }
         pairing = nil
@@ -48,6 +63,30 @@ final class BluetoothClassicPairer: NSObject, @preconcurrency CBCentralManagerDe
 
     func centralManagerDidUpdateState(_ central: CBCentralManager) {
         startInquiry()
+    }
+
+    private func reconnectKnownController() {
+        guard wantsScan, central.state == .poweredOn, pairing == nil, reconnecting == nil else { return }
+        let candidates = (IOBluetoothDevice.pairedDevices() ?? []).compactMap { $0 as? IOBluetoothDevice }
+            .filter { device in
+                guard !device.isConnected(), names.contains(device.name ?? ""),
+                      let record = device.getServiceRecord(for: IOBluetoothSDPUUID(uuid16: 0x1200)),
+                      let vendor = record.getAttributeDataElement(0x0201)?.getNumberValue()?.uint16Value,
+                      let product = record.getAttributeDataElement(0x0202)?.getNumberValue()?.uint16Value else { return false }
+                return matchers.contains { $0.matches(vendorID: vendor, productID: product) }
+            }
+            .sorted { (reconnectAttempts[$0.addressString ?? ""] ?? .distantPast) < (reconnectAttempts[$1.addressString ?? ""] ?? .distantPast) }
+        guard let device = candidates.first, let address = device.addressString else { return }
+        reconnectAttempts[address] = Date()
+        reconnecting = address
+        // Public asynchronous form of the openConnection call verified with
+        // blueutil on 2026-11-01. Do not block the UI while paging a sleeping pad.
+        let status = device.openConnection(self, withPageTimeout: 0x1000, authenticationRequired: false)
+        if status != kIOReturnSuccess { reconnecting = nil }
+    }
+
+    @objc func connectionComplete(_ device: IOBluetoothDevice, status: IOReturn) {
+        if reconnecting == device.addressString { reconnecting = nil }
     }
 
     func deviceInquiryDeviceFound(_ sender: IOBluetoothDeviceInquiry, device: IOBluetoothDevice) {

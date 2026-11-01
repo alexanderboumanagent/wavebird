@@ -13,6 +13,12 @@ enum AfterglowBluetoothCommands {
         ]
     }
 
+    static func acknowledgement(_ data: Data, for command: Data) -> Bool? {
+        guard command.count >= 11, data.count >= 15, data.first == 0x21,
+              data[data.startIndex + 14] == command[command.startIndex + 10] else { return nil }
+        return data[data.startIndex + 13] & 0x80 != 0
+    }
+
     private static func subcommand(_ command: UInt8, value: UInt8, sequence: UInt8) -> Data {
         var bytes = Data([
             0x01, sequence & 0x0F,

@@ -139,4 +139,17 @@ struct AfterglowBluetoothTests {
         #expect(!matcher.matches(vendorID: 0x057E, productID: 0x0194))
         #expect(!matcher.matches(vendorID: 0x0E6F, productID: 0x0193))
     }
+
+    @Test func acknowledgementsMatchTheEchoedSubcommandAndStatus() {
+        let commands = AfterglowBluetoothCommands.initialize(player: 1)
+        var reply = Data([0x21, 2, 0x80, 0, 0, 0, 0x3E, 0xF8, 0x82, 0x0A, 0x38, 0x83, 0, 0x80, 0x30])
+        reply.append(Data(repeating: 0, count: 34))
+        #expect(AfterglowBluetoothCommands.acknowledgement(reply, for: commands[0]) == true)
+        #expect(AfterglowBluetoothCommands.acknowledgement(reply, for: commands[1]) == nil)
+        reply[13] = 0
+        #expect(AfterglowBluetoothCommands.acknowledgement(reply, for: commands[0]) == false)
+        #expect(AfterglowBluetoothCommands.acknowledgement(reply.prefix(14), for: commands[0]) == nil)
+        let framed = Data([0xFF]) + reply
+        #expect(AfterglowBluetoothCommands.acknowledgement(framed.dropFirst(), for: commands[0]) == false)
+    }
 }

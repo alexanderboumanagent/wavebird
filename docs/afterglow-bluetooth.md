@@ -63,11 +63,18 @@ command. This does not require virtual-HID signing.
 ## Multiple controllers
 
 The transport has a separate CoreHID client and report task per physical device.
+Initialization waits for each matching subcommand ACK before sending the next
+command. Paired controllers are reconnected with the public asynchronous
+IOBluetooth openConnection API; a round-robin poll finds a pad after Home wakes it.
 The HID serial is the controller's Bluetooth address. A vendor/product/address
 identity is used for settings and virtual-output serials; identical product names
 cannot collapse four controllers onto one identity. Player-light slots are
 allocated from the four currently available slots. Pairing proceeds one device
-at a time while connected devices keep streaming.
+at a time while connected devices keep streaming. During this Mac's initial
+setup, fourth-device discovery stalled with three active links. Temporarily
+closing one link allowed the fourth to pair; reconnecting the saved pad then
+produced four working simultaneous input streams. If initial pairing stalls,
+pair controllers before keeping all four awake.
 
 Disconnecting a WaveBird input subscription keeps the native Bluetooth pairing.
 The controller remains paired to the Mac; macOS Bluetooth Settings owns that bond.
@@ -75,16 +82,24 @@ No pairing key is exported to the repository.
 
 ## Validation status
 
-- App build and **113 tests in 22 suites** passed.
+- App build and **114 tests in 22 suites** passed.
 - One physical unit paired over Bluetooth Classic and exposed its HID descriptor.
 - User-generated button/hat/stick changes were captured over Bluetooth.
-- The production transport/parser decoded **300 wireless reports across three
-  input subscriptions**, preserving the same identity. This tests subscription
+- The ACK-paced production transport/parser decoded **300 wireless reports
+  across three input subscriptions** (283 full-mode, 17 initial simple-mode),
+  preserving the same identity. This tests subscription
   lifecycle, not a controller power cycle or removal of the Bluetooth bond.
-- Four simultaneous controllers: **pending hardware test**.
-- Physical power-off/reconnect, sleep/wake, and per-player input isolation:
-  **pending hardware tests**.
-- GameController did not recognize the physical controller. The fork's virtual
+- **Four actual controllers simultaneously delivered at least 100 decoded full-mode
+  reports each**, with four distinct Bluetooth identities and fresh input from
+  every device.
+- A Bluetooth link was deliberately closed without removing its pairing. After
+  the user pressed Home, the new reconnect loop restored the same controller
+  identity. The other three streams remained present, and the four-controller
+  full-mode check passed again. All four solid player lights were user-confirmed.
+- Physical power-off, sleep/wake, and per-player output isolation inside a game:
+  **pending hardware/game tests**.
+- GameController still reported **zero native controllers** after all four were
+  paired and initialized in full mode (8-second foreground-independent check). The fork's virtual
   gamepad output remains blocked by missing Apple-approved signing. No successful
   cross-game or four-player game session is claimed.
 
@@ -94,6 +109,7 @@ Hardware checks, using the production transport/parser:
 Tools/build-local.sh --probe
 build/AfterglowBridgeProbe --bluetooth --input-only
 build/AfterglowBridgeProbe --four-inputs
+build/AfterglowBridgeProbe --four-inputs --monitor
 ```
 
 The four-input check requires four actual controllers, verifies distinct identities

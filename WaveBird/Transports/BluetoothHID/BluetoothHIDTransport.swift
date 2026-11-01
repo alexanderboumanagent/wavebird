@@ -18,6 +18,13 @@ actor BluetoothHIDTransport: Transport {
     private var referenceIDs: [HIDDeviceClient.DeviceReference: DeviceID] = [:]
     private var identityIDs: [String: DeviceID] = [:]
     private var playerSlots: [DeviceID: Int] = [:]
+    private var pendingInitializations: [DeviceID: PendingInitialization] = [:]
+
+    private struct PendingInitialization {
+        let token: UUID
+        let command: Data
+        let result: CheckedContinuation<Bool, Never>
+    }
 
     private struct Device: Sendable {
         let client: HIDDeviceClient
@@ -46,7 +53,7 @@ actor BluetoothHIDTransport: Transport {
         }
         guard !matchers.isEmpty else { return }
         if pairer == nil { pairer = await BluetoothClassicPairer(events: continuation) }
-        await pairer?.start(names: Set(matchers.map(\.pairingName)))
+        await pairer?.start(matchers: matchers)
         let criteria = matchers.map {
             HIDDeviceManager.DeviceMatchingCriteria(primaryUsage: .genericDesktop(.gamepad),
                 vendorID: UInt32($0.vendorID), productID: UInt32($0.productID), transport: .bluetooth)
@@ -121,6 +128,7 @@ actor BluetoothHIDTransport: Transport {
                     guard !Task.isCancelled else { return }
                     switch event {
                     case .inputReport(let reportID, let data, _):
+                        if reportID?.rawValue == 0x21 { await self?.receivedAcknowledgement(data, for: id) }
                         continuation.yield(.reportReceived(id, reportID: reportID?.rawValue, data))
                     case .deviceRemoved:
                         await self?.removed(device.client.deviceReference)
@@ -135,19 +143,48 @@ actor BluetoothHIDTransport: Transport {
         }
         // Both commands acknowledged on 0E6F:0194 hardware, 2026-11-01.
         // Keep simple-report decoding available during initialization.
-        do {
-            for command in AfterglowBluetoothCommands.initialize(player: slot) {
-                try await device.client.dispatchSetReportRequest(type: .output,
-                    id: HIDReportID(rawValue: 0x01), data: command, timeout: .seconds(1))
+        for command in AfterglowBluetoothCommands.initialize(player: slot) {
+            guard reportTasks[id] != nil else { return }
+            if !(await initialize(command, device: device, id: id)) {
+                continuation.yield(.error(id, "Bluetooth controller did not acknowledge initialization; simple input remains available."))
             }
-        } catch {
-            continuation.yield(.error(id, "Bluetooth controller initialization failed: \(error.localizedDescription)"))
         }
         guard reportTasks[id] != nil, devices[id]?.client == device.client else { return }
         continuation.yield(.ready(id))
     }
 
     func disconnect(_ id: DeviceID) async { streamEnded(id, reason: .userInitiated) }
+
+    private func initialize(_ command: Data, device: Device, id: DeviceID) async -> Bool {
+        let token = UUID()
+        return await withCheckedContinuation { result in
+            pendingInitializations[id] = PendingInitialization(token: token, command: command, result: result)
+            Task { [weak self] in
+                do {
+                    try await device.client.dispatchSetReportRequest(type: .output,
+                        id: HIDReportID(rawValue: 1), data: command, timeout: .seconds(1))
+                } catch {
+                    await self?.completeInitialization(id, token: token, acknowledged: false)
+                }
+            }
+            Task { [weak self] in
+                try? await Task.sleep(for: .seconds(1))
+                await self?.completeInitialization(id, token: token, acknowledged: false)
+            }
+        }
+    }
+
+    private func receivedAcknowledgement(_ data: Data, for id: DeviceID) {
+        guard let pending = pendingInitializations[id],
+              let acknowledged = AfterglowBluetoothCommands.acknowledgement(data, for: pending.command) else { return }
+        completeInitialization(id, token: pending.token, acknowledged: acknowledged)
+    }
+
+    private func completeInitialization(_ id: DeviceID, token: UUID, acknowledged: Bool) {
+        guard let pending = pendingInitializations[id], pending.token == token else { return }
+        pendingInitializations[id] = nil
+        pending.result.resume(returning: acknowledged)
+    }
 
     func send(_ payload: Data, reportID: UInt8?, to id: DeviceID) async throws {
         guard let device = devices[id] else { throw BluetoothHIDTransportError.unknownDevice }
@@ -163,6 +200,7 @@ actor BluetoothHIDTransport: Transport {
     }
 
     private func streamEnded(_ id: DeviceID, reason: DisconnectReason) {
+        if let pending = pendingInitializations.removeValue(forKey: id) { pending.result.resume(returning: false) }
         playerSlots[id] = nil
         guard let task = reportTasks.removeValue(forKey: id) else { return }
         task.cancel()

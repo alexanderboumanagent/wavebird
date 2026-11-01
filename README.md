@@ -62,7 +62,9 @@ VID/PID and input profile.
 
 The target is four independent Turtle Beach wireless controllers, each exposed
 as a standard gamepad to games with controller support. Bluetooth input and
-initialization have been verified on one physical controller. System-wide game
+initialization have been verified on four physical controllers simultaneously.
+Automatic reconnect after Home was also verified while the other three stayed
+connected. System-wide game
 output from this fork still requires Apple-approved signing. The tested unit
 advertises as **Lic3 Pro Controller** over Bluetooth Classic; the new input
 backend is separate from WaveBird's Nintendo BLE backend.
@@ -78,7 +80,7 @@ Unplug USB and hold SYNC beside USB-C for 3 seconds. The probe pairs only the
 observed `Lic3 Pro Controller` name, reports SDP/HID identities when available,
 and checks whether macOS GameController recognizes the physical controller.
 Without `--pair`, it only observes. The app also pairs this model automatically
-when it sees it in SYNC mode. See the validation document for the current
+when it sees it in SYNC mode. See the validation document for detailed
 four-controller and game-output test status.
 
 For the separate virtual-output signing setup, see
@@ -234,3 +236,15 @@ or the WebHID / Gamepad APIs (Chrome / Safari gamepad testers like
 ## License
 
 MIT — see [LICENSE](LICENSE).
+
+### Command Line Tools SDK compatibility
+
+The local builder detects a CLT SDK that requires the missing SwiftUI State
+macro plugin and uses a compatible installed SDK. Full Xcode keeps its default
+SDK. You can choose explicitly with `--sdk` or `WAVEBIRD_SDK`. On the tested Mac,
+CLT Swift 6.4.2 with SDK 26.5 builds successfully; SDK 27.2 lacks its required
+SwiftUI macro plugin. For SwiftPM tests in that setup:
+
+```sh
+swift test --sdk /Library/Developer/CommandLineTools/SDKs/MacOSX26.5.sdk --jobs 4
+```
