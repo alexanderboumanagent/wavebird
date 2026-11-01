@@ -225,7 +225,7 @@ struct ContentView: View {
         ContentUnavailableView {
             Label("No Controller Connected", systemImage: "gamecontroller")
         } description: {
-            Text("Hold the SYNC Button on the Nintendo Switch 2 Controller that you'd like to pair.")
+            Text("Connect a supported USB controller, or hold SYNC on a Nintendo Switch 2 controller to pair over Bluetooth.")
         }
     }
 

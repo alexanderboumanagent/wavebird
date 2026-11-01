@@ -10,7 +10,8 @@ macOS app that bridges Nintendo Switch 2 controllers to a virtual HID gamepad. N
 ## Scope
 
 - **Shipped:** NSO/NS2 GameCube Controller, NS2 Pro Controller, and NS2 Joy-Con (L/R) over BLE, all with rumble. Joy-Cons work solo or as a merged L+R pair behind one virtual HID. LTK pairing (cmd 0x15) — paired controllers reconnect by pressing any button.
-- **Deferred:** USB transport for incoming controllers. Protocol scaffolding (`USBMatcher`, `USBInitStep`, `parseUSBReport`) is intentionally kept in `Core/ControllerProfile.swift` so adding USB later is just writing the transport. A previous USB attempt hit IOKit issues with `com.apple.developer.hid.virtual.device` and was reverted — see git around `04b351d` / `37fc180` if reviving.
+- **Added in this fork:** Afterglow Wave Wireless Controller for Switch 2 (`0E6F:0194`) over USB. `Transports/USB/USBTransport.swift` uses CoreHID actors for input and feeds the existing output pipeline. Device metadata arrives through `.metadata`, not fake BLE command responses. Serial-less controllers persist settings per physical USB port. See `docs/afterglow-usb.md` for captured input format and hardware-test status.
+- **Deferred:** Nintendo controller USB initialization, Charging Grip and Afterglow Bluetooth. Do not send Nintendo initialization commands to licensed third-party controllers. The USB matcher must include both vendor and product IDs; output virtual devices use a different transport and are not admitted as physical USB input.
 
 ## Architecture (only the non-obvious bits — descriptive, not prescriptive)
 

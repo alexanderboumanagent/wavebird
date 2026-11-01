@@ -28,6 +28,7 @@ enum TransportEvent: Sendable {
     case disconnected(DeviceID, DisconnectReason)
     case reportReceived(DeviceID, reportID: UInt8?, Data)
     case commandResponse(DeviceID, request: Data, response: CommandResponseFrame?)
+    case metadata(DeviceID, ControllerMetadata)
     case unmatchedResponse(DeviceID, Data, sourceHandle: UInt16?)
     case error(DeviceID?, String)
     /// Transport-wide availability. `reason == nil` means available; non-nil

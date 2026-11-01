@@ -5,6 +5,7 @@ protocol ControllerProfile: Sendable {
     var name: String { get }
     var bleMatcher: BLEMatcher? { get }
     var usbMatcher: USBMatcher? { get }
+    var supportsRumble: Bool { get }
 
     var hidVendorID: UInt16 { get }
     var hidProductID: UInt16 { get }
@@ -38,6 +39,7 @@ protocol ControllerProfile: Sendable {
 }
 
 extension ControllerProfile {
+    var supportsRumble: Bool { true }
     func encodeRumble(_ cmd: RumbleCommand, sequence: UInt8, settings: RumbleSettings.Snapshot) -> Data? { nil }
 
     var rumbleRefreshInterval: Duration? { nil }
@@ -173,6 +175,19 @@ struct USBMatcher: Sendable {
     let vendorID: UInt16
     let productID: UInt16
     let initWrites: [USBInitStep]
+
+    func matches(vendorID: UInt16, productID: UInt16) -> Bool {
+        self.vendorID == vendorID && self.productID == productID
+    }
+
+    static func persistentIdentity(vendorID: UInt16, productID: UInt16, serial: String?, locationID: UInt64?, fallbackID: UInt64) -> String {
+        let prefix = String(format: "usb-%04X-%04X", vendorID, productID)
+        if let serial, !serial.isEmpty { return "\(prefix)-serial-\(serial)" }
+        // This controller advertises no serial number. Settings follow its
+        // physical USB port; two serial-less units on different ports stay separate.
+        if let locationID { return "\(prefix)-port-\(String(locationID, radix: 16))" }
+        return "\(prefix)-attachment-\(fallbackID)"
+    }
 }
 
 struct USBInitStep: Sendable {

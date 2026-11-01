@@ -14,7 +14,11 @@ final class BridgeCoordinator {
     var isScanning = false
     /// Non-nil when a transport is unavailable (e.g. Bluetooth is off).
     /// Cleared when the transport becomes available again.
-    var transportUnavailableReason: String?
+    var transportUnavailableReasons: [TransportKind: String] = [:]
+    var transportUnavailableReason: String? {
+        let reasons = [TransportKind.ble, .usb].compactMap { transportUnavailableReasons[$0] }
+        return reasons.isEmpty ? nil : reasons.joined(separator: "\n")
+    }
     /// Non-nil when virtual-controller output is blocked. Drives the
     /// permission banner in the main window and menu bar. Set only by
     /// failVirtualHID (observed VHID creation failures) and cleared by any

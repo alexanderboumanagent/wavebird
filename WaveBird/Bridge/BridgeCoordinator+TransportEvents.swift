@@ -128,7 +128,7 @@ extension BridgeCoordinator {
                 devices[id]?.connectionState = .discovered
                 devices[id]?.advertisement = info
             } else {
-                guard let profile = profile(forProductID: info.productID, kind: kind) else { return }
+                guard let profile = profile(for: info, kind: kind) else { return }
                 devices[id] = DeviceRecord(
                     id: id,
                     profile: profile,
@@ -229,6 +229,9 @@ extension BridgeCoordinator {
                 FileHandle.standardError.write(Data("[ble] resp:          (none)\n".utf8))
             }
 
+        case .metadata(let id, let metadata):
+            mergeMetadata(metadata, into: id)
+
         case .unmatchedResponse(_, let data, let sourceHandle):
             let label = sourceHandle.map { String(format: "0x%04X", $0) } ?? "?"
             FileHandle.standardError.write(Data("[ble] orphan \(label): \(hex(data))\n".utf8))
@@ -302,7 +305,7 @@ extension BridgeCoordinator {
             stderrLog(msg)
 
         case .availability(let reason):
-            transportUnavailableReason = reason
+            transportUnavailableReasons[kind] = reason
         }
     }
 
@@ -381,10 +384,13 @@ extension BridgeCoordinator {
         connectingTimeoutTasks[id] = nil
     }
 
-    func profile(forProductID pid: UInt16, kind: TransportKind) -> (any ControllerProfile)? {
+    func profile(for info: AdvertisementInfo, kind: TransportKind) -> (any ControllerProfile)? {
         switch kind {
-        case .ble: return profiles.first { $0.bleMatcher?.productID == pid }
-        case .usb: return profiles.first { $0.usbMatcher?.productID == pid }
+        case .ble:
+            guard info.vendorID == 0x057E else { return nil }
+            return profiles.first { $0.bleMatcher?.productID == info.productID }
+        case .usb:
+            return profiles.first { $0.usbMatcher?.matches(vendorID: info.vendorID, productID: info.productID) == true }
         }
     }
 }

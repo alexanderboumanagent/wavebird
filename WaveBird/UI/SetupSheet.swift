@@ -14,7 +14,7 @@ struct SetupSheet: View {
                     .foregroundStyle(.tertiary)
                 Text("Set up Game Controller")
                     .font(.headline)
-                Text("Hold the SYNC Button on the Nintendo Switch 2 Controller that you'd like to pair.")
+                Text("Connect a supported USB controller, or hold SYNC on a Nintendo Switch 2 controller to pair over Bluetooth.")
                     .font(.callout)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)

@@ -43,6 +43,8 @@ struct ControllerDetailSheet: View {
         let rightRecord = isPair ? pair.flatMap { coordinator.devices[$0.rightID] } : nil
         let rightPaired = rightRecord?.serial.flatMap { coordinator.knownControllers[$0] }
         let productID = paired?.productID ?? live?.advertisement.productID
+        let sourceProfile = live?.profile ?? productID.flatMap { coordinator.profile(forProductID: $0) }
+        let isUSB = live?.id.transport == .usb || (sourceProfile?.usbMatcher != nil && sourceProfile?.bleMatcher == nil)
         let serial = paired?.serial ?? live?.serial
         // While paired, both Joy-Con motors read from a single shared
         // RumbleSettings so the one card on screen drives both sides. Solo
@@ -79,7 +81,13 @@ struct ControllerDetailSheet: View {
                 case .general:
                     generalTab(live: live, paired: paired, xbox: xboxSettings)
                 case .haptics:
-                    hapticsTab(live: live, settings: settings, isReady: isReady)
+                    if sourceProfile?.supportsRumble == false {
+                        Text("Rumble is not available for this controller over USB.")
+                            .foregroundStyle(.secondary)
+                            .padding(24)
+                    } else {
+                        hapticsTab(live: live, settings: settings, isReady: isReady)
+                    }
                 case .about:
                     if isPair {
                         aboutTabForPair(
@@ -88,7 +96,7 @@ struct ControllerDetailSheet: View {
                             connectionState: connectionState
                         )
                     } else {
-                        aboutTab(displayName: displayName, serial: serial, paired: paired, connectionState: connectionState)
+                        aboutTab(displayName: displayName, serial: serial, paired: paired, connectionState: connectionState, isUSB: isUSB)
                     }
                 }
             }
@@ -202,14 +210,14 @@ struct ControllerDetailSheet: View {
     }
 
     @ViewBuilder
-    private func aboutTab(displayName: String, serial: String?, paired: KnownController?, connectionState: DeviceConnectionState?) -> some View {
+    private func aboutTab(displayName: String, serial: String?, paired: KnownController?, connectionState: DeviceConnectionState?, isUSB: Bool) -> some View {
         Form {
             Section {
                 LabeledContent("Device Type") {
                     Text(displayName)
                 }
                 if let serial {
-                    LabeledContent("Serial Number") {
+                    LabeledContent(isUSB ? "Device Identifier" : "Serial Number") {
                         Text(serial)
                             .monospaced()
                             .foregroundStyle(.secondary)
@@ -221,7 +229,9 @@ struct ControllerDetailSheet: View {
                 }
             } footer: {
                 if connectionState != .ready {
-                    Text("Press any button on the controller to reconnect. If it's not advertising, hold SYNC to wake it up.")
+                    Text(isUSB
+                         ? "Reconnect the controller’s USB cable."
+                         : "Press any button on the controller to reconnect. If it's not advertising, hold SYNC to wake it up.")
                 }
             }
         }
