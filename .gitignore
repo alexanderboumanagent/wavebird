@@ -17,6 +17,12 @@ DerivedData/
 .swiftpm/
 Package.resolved
 
+# Local signing credentials and provisioning profiles
+*.p12
+*.pfx
+*.provisionprofile
+*.mobileprovision
+
 # Misc
 *.swp
 *.swo

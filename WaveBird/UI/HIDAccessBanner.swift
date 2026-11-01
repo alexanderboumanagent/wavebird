@@ -17,8 +17,10 @@ struct HIDAccessBanner: View {
                     // Without this the multi-line message truncates instead
                     // of growing the banner vertically.
                     .fixedSize(horizontal: false, vertical: true)
-                Button("Open System Settings…", action: openAccessibilitySettings)
-                    .controlSize(.small)
+                if issue.canFixInSystemSettings {
+                    Button("Open System Settings…", action: openAccessibilitySettings)
+                        .controlSize(.small)
+                }
             }
             Spacer()
         }

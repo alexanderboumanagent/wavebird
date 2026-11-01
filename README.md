@@ -5,6 +5,11 @@ Controller for Switch 2 (`0E6F:0194`)**. The upstream DMG does not contain this
 backend. Build this fork with `Tools/build-local.sh`; the separate development
 app is written to `build/WaveBird Afterglow.app`.
 
+**Signing requirement:** the default local build can diagnose USB input but
+cannot publish a virtual gamepad. macOS requires an Apple-approved virtual-HID
+entitlement and provisioning profile. Accessibility permission alone is not
+enough. A properly signed build of this fork is needed for games.
+
 The input transport uses Apple's **CoreHID** library, then feeds the existing
 WaveBird output profiles. No controller firmware changes or Nintendo USB
 initialization commands are used. See [Afterglow USB support](docs/afterglow-usb.md)
@@ -39,7 +44,8 @@ Early. Currently supports:
   SYNC. Remembered controllers stay visible (offline) in the list.
 - **Afterglow Wave Wireless Controller for Switch 2 (`0E6F:0194`) over USB** —
   face/shoulder buttons, D-pad, stick clicks, Home/Capture and both sticks.
-  Its USB report does not expose motion, rumble, or separate C/GL/GR inputs.
+  Its USB report does not expose motion or separate C/GL/GR inputs. USB rumble
+  is not implemented.
 
 Not yet supported: Nintendo controllers over USB, Charging Grip, and Afterglow
 wireless connections. Other licensed controller models need their own verified
@@ -104,6 +110,7 @@ swift test --jobs 4
 
 This creates a separate, ad-hoc-signed development app with its own bundle ID.
 It does not reuse the upstream signing identity or replace the installed app.
+It can read USB input; it cannot emulate a controller without approved signing.
 The first test build fetches Apple's Swift Testing package when it is not
 bundled with the toolchain. The Xcode project remains the distribution build:
 
@@ -112,6 +119,17 @@ xcodebuild -project WaveBird.xcodeproj -scheme WaveBird -configuration Debug bui
 ```
 
 Or open `WaveBird.xcodeproj` in Xcode and run.
+
+With your own approved signing identity and provisioning profile covering
+`dev.alexanderbouman.wavebird.afterglow`:
+
+```sh
+Tools/build-local.sh --identity 'Developer ID Application: Your Name (TEAMID)' \
+  --profile /path/to/your-approved.provisionprofile
+```
+
+The build checks that the supplied profile includes virtual HID authorization
+and covers this bundle ID. Signing credentials and profiles are not committed.
 
 ## Permissions
 
@@ -134,7 +152,7 @@ unchecked, check it and relaunch.
 
 ## Use
 
-For the Afterglow model above, launch this fork, connect a USB data cable,
+For the Afterglow model above, launch an authorized signed build of this fork, connect a USB data cable,
 and choose an output profile when prompted. SYNC and Bluetooth pairing are
 not needed for USB. Xbox Wireless Controller or Switch Pro Controller are the
 recommended output profiles. Controllers without hardware serial numbers keep

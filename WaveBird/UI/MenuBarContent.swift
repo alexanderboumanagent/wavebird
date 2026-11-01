@@ -18,9 +18,13 @@ struct MenuBarContent: View {
         }
 
         if let issue = coordinator.hidAccessIssue {
-            Button {
-                openAccessibilitySettings()
-            } label: {
+            if issue.canFixInSystemSettings {
+                Button {
+                    openAccessibilitySettings()
+                } label: {
+                    Label(issue.menuTitle, systemImage: "exclamationmark.triangle.fill")
+                }
+            } else {
                 Label(issue.menuTitle, systemImage: "exclamationmark.triangle.fill")
             }
             Divider()
