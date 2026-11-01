@@ -64,8 +64,11 @@ command. This does not require virtual-HID signing.
 
 The transport has a separate CoreHID client and report task per physical device.
 Initialization waits for each matching subcommand ACK before sending the next
-command. Paired controllers are reconnected with the public asynchronous
+command. Initialization waits 250 ms before sending subcommands, following
+SDL's macOS handshake workaround in `HIDAPI_DriverSwitch_OpenJoystick`.
+Paired controllers are reconnected with the public asynchronous
 IOBluetooth openConnection API; a round-robin poll finds a pad after Home wakes it.
+This reconnect path is not reliable across all four test units; see below.
 The HID serial is the controller's Bluetooth address. A vendor/product/address
 identity is used for settings and virtual-output serials; identical product names
 cannot collapse four controllers onto one identity. Player-light slots are
@@ -87,8 +90,15 @@ the GUI thread caused a sampled semaphore deadlock. The fork warms that runtime
 off the main thread so Bluetooth authorization cannot freeze the window.
 
 An unsigned diagnostic build keeps physical input subscriptions open and shows
-the Apple signing requirement. It does not offer an output-profile picker that
-cannot succeed or disconnect the pads for lacking virtual-HID authorization.
+the Apple signing requirement. It does not automatically offer an output-profile
+picker that cannot succeed or disconnect the pads for lacking virtual-HID authorization.
+
+For four-controller wireless use, unplug controller USB cables from the Mac.
+USB and Bluetooth expose separate HID devices, and the USB interface has no
+serial or Bluetooth address to associate it with a wireless pad. This fork does
+not deduplicate the same physical controller across those two interfaces. A
+controller plugged into the Mac while connected wirelessly therefore appears
+twice; a wall charger avoids that extra USB input device.
 
 ## Validation status
 
@@ -106,12 +116,33 @@ cannot succeed or disconnect the pads for lacking virtual-HID authorization.
   the user pressed Home, the new reconnect loop restored the same controller
   identity. The other three streams remained present, and the four-controller
   full-mode check passed again. All four solid player lights were user-confirmed.
+- Subsequent reconnect tests on another unit failed with `kIOReturnTimeout`
+  (`E00002D6`) while three other links stayed connected. The default synchronous
+  API, native Bluetooth Settings Connect, altered inquiry scheduling, and
+  disabling Nintendo BLE scanning did not establish a reliable fix. Those
+  speculative application changes were reverted. One earlier successful Home
+  test does **not** establish reliable four-controller reconnect.
+- That unit was subsequently paired again successfully after removing only its
+  saved bond and temporarily closing another link without removing that link's
+  pairing. The repair used standard IOBluetooth pairing and returned success;
+  the underlying reconnect problem remains unresolved.
+- After that pairing repair, the temporarily released controller reconnected
+  after Home. The production transport, including the macOS initialization
+  delay, again passed the four-controller check with at least 100 decoded full
+  reports per physical unit. No further radio-disconnect tests were performed.
+- The installed `WaveBird Afterglow.app` displayed all four wireless controllers
+  connected after the user tapped Home. Bluetooth discovery was verified running
+  after refreshing the rebuilt diagnostic app's existing Bluetooth grant.
 - Physical power-off, sleep/wake, and per-player output isolation inside a game:
   **pending hardware/game tests**.
 - GameController still reported **zero native controllers** after all four were
   paired and initialized in full mode (8-second foreground-independent check). The fork's virtual
   gamepad output remains blocked by missing Apple-approved signing. No successful
   cross-game or four-player game session is claimed.
+- A separate [Steam-specific solution](steam-afterglow.md) is now verified:
+  SDL's documented protocol override caused the actual Steam client to enable
+  its Switch HIDAPI driver and open all four physical controllers. It does not
+  require signing this fork's virtual-HID output. Game-session validation is pending.
 
 Hardware checks, using the production transport/parser:
 

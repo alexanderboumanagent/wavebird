@@ -1,5 +1,10 @@
 # WaveBird
 
+**Steam with four Afterglow controllers:** the [Steam Afterglow Launcher](docs/steam-afterglow.md)
+uses SDL's protocol override. The actual Steam client has opened all four wireless
+controllers with its Switch HIDAPI driver enabled. This path needs no Apple Developer
+profile; four-player gameplay validation is still pending.
+
 This fork adds **Bluetooth Classic and USB input for the Turtle Beach Afterglow Wave Wireless
 Controller for Switch 2 (`0E6F:0194`)**. The upstream DMG does not contain this
 backend. Build this fork with `Tools/build-local.sh`; the separate development
@@ -8,7 +13,8 @@ app is written to `build/WaveBird Afterglow.app`.
 **Signing requirement:** the default local build can diagnose physical input but
 cannot publish a virtual gamepad. macOS requires an Apple-approved virtual-HID
 entitlement and provisioning profile. Accessibility permission alone is not
-enough. A properly signed build of this fork is needed for games.
+enough. A properly signed build is needed for this fork's virtual output; the
+Steam launcher above uses Steam's existing driver instead.
 
 The input transport uses Apple's **CoreHID** library, then feeds the existing
 WaveBird output profiles. No controller firmware changes or Nintendo USB
@@ -63,9 +69,10 @@ VID/PID and input profile.
 The target is four independent Turtle Beach wireless controllers, each exposed
 as a standard gamepad to games with controller support. Bluetooth input and
 initialization have been verified on four physical controllers simultaneously.
-Automatic reconnect after Home was also verified while the other three stayed
-connected. System-wide game
-output from this fork still requires Apple-approved signing. The tested unit
+Automatic reconnect after Home was verified once while the other three stayed
+connected, but a later test on another unit repeatedly timed out and required a
+pairing repair. Reliable four-controller reconnect remains unresolved.
+System-wide game output from this fork still requires Apple-approved signing. The tested unit
 advertises as **Lic3 Pro Controller** over Bluetooth Classic; the new input
 backend is separate from WaveBird's Nintendo BLE backend.
 

@@ -1,9 +1,27 @@
 # Signing the Afterglow fork for virtual gamepad output
 
+For Steam, use the verified [Steam SDL override and launcher](steam-afterglow.md).
+That route does not need your own Apple Developer membership or virtual-HID
+profile. The instructions below apply to the separate system-wide virtual-gamepad
+bridge.
+
 Bluetooth/USB input capture can run without a virtual-HID entitlement. Publishing
 standard virtual gamepads through CoreHID requires Apple's approval even on the
 developer's own Mac. Paying for Developer Program membership alone does not grant
 that approval. The upstream app's profile and certificate cannot sign this fork.
+
+Ad-hoc diagnostic builds also have a changing code-hash requirement. On the test
+Mac, rebuilding left the old Bluetooth grant visible as On while TCC logged a
+code-requirement mismatch for the new binary. After installing a diagnostic
+update, refresh that app's existing grant in Privacy & Security → Bluetooth
+if discovery waits for authorization. On this Mac, toggling the old entry did
+not reliably replace its code requirement. Selecting only WaveBird Afterglow,
+removing that entry with the minus button, then adding the installed app with
+the plus button and choosing Quit & Reopen restored access to the current
+binary. This does not remove the controllers' Bluetooth pairings. macOS may
+require local password authentication. Do not grant unrelated permissions
+or disable system protections. Use a stable Apple signing identity for ongoing
+development rather than relying on an ad-hoc signature for permission continuity.
 
 ## Account setup
 
@@ -37,6 +55,8 @@ that approval. The upstream app's profile and certificate cannot sign this fork.
 > com.apple.developer.hid.virtual.device. It does not require a kernel extension
 > or disabling macOS security protections. Bluetooth pairing, initialization, four simultaneous physical-controller input
 > streams and a saved-pairing reconnect have been verified on hardware.
+> A later reconnect test on another unit timed out and required pairing repair;
+> reliable four-controller reconnect remains under investigation.
 > Virtual game-output validation is awaiting this entitlement approval.
 >
 > Please advise how to obtain this entitlement for Mac development and, if
