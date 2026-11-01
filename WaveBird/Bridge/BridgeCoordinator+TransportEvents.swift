@@ -161,6 +161,14 @@ extension BridgeCoordinator {
             // controller before it sends any input.
             activityTracker.seed(id)
             guard let record = devices[id] else { return }
+            // Keep an unsigned development build useful for physical input
+            // diagnostics. Its missing entitlement cannot be fixed by choosing
+            // an output profile or granting another Accessibility permission.
+            guard HIDAccessIssue.hasVirtualHIDEntitlement else {
+                hidAccessIssue = .signingRequired
+                refreshKnownController(for: record)
+                return
+            }
             // Joy-Cons take a separate path: solo Joy-Con play promotes via
             // handleJoyConReady. LTK pairing for each Joy-Con is deferred
             // until after its VHID activates (inside activateJoyConPair or

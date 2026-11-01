@@ -76,9 +76,19 @@ closing one link allowed the fourth to pair; reconnecting the saved pad then
 produced four working simultaneous input streams. If initial pairing stalls,
 pair controllers before keeping all four awake.
 
-Disconnecting a WaveBird input subscription keeps the native Bluetooth pairing.
-The controller remains paired to the Mac; macOS Bluetooth Settings owns that bond.
-No pairing key is exported to the repository.
+WaveBird's Disconnect action closes the native radio connection while keeping
+the Bluetooth pairing. The hardware probe can separately end an input
+subscription without closing that link. macOS Bluetooth Settings owns the bond;
+no pairing key is exported to the repository.
+
+Already-paired CoreHID input monitoring starts independently of legacy inquiry
+initialization. On macOS 27.2, initializing IOBluetooth's inquiry coordinator on
+the GUI thread caused a sampled semaphore deadlock. The fork warms that runtime
+off the main thread so Bluetooth authorization cannot freeze the window.
+
+An unsigned diagnostic build keeps physical input subscriptions open and shows
+the Apple signing requirement. It does not offer an output-profile picker that
+cannot succeed or disconnect the pads for lacking virtual-HID authorization.
 
 ## Validation status
 

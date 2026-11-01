@@ -12,6 +12,7 @@ actor BluetoothHIDTransport: Transport {
     private nonisolated let continuation: AsyncStream<TransportEvent>.Continuation
     private let manager = HIDDeviceManager()
     private var pairer: BluetoothClassicPairer?
+    private var pairingStartupTask: Task<Void, Never>?
     private var discoveryTask: Task<Void, Never>?
     private var reportTasks: [DeviceID: Task<Void, Never>] = [:]
     private var devices: [DeviceID: Device] = [:]
@@ -29,6 +30,7 @@ actor BluetoothHIDTransport: Transport {
     private struct Device: Sendable {
         let client: HIDDeviceClient
         let identity: String
+        let address: String?
     }
 
     init() {
@@ -39,6 +41,7 @@ actor BluetoothHIDTransport: Transport {
 
     deinit {
         discoveryTask?.cancel()
+        pairingStartupTask?.cancel()
         for task in reportTasks.values { task.cancel() }
         let pairer = pairer
         Task { @MainActor in pairer?.stop() }
@@ -52,8 +55,6 @@ actor BluetoothHIDTransport: Transport {
             return nil
         }
         guard !matchers.isEmpty else { return }
-        if pairer == nil { pairer = await BluetoothClassicPairer(events: continuation) }
-        await pairer?.start(matchers: matchers)
         let criteria = matchers.map {
             HIDDeviceManager.DeviceMatchingCriteria(primaryUsage: .genericDesktop(.gamepad),
                 vendorID: UInt32($0.vendorID), productID: UInt32($0.productID), transport: .bluetooth)
@@ -73,11 +74,32 @@ actor BluetoothHIDTransport: Transport {
                 if !Task.isCancelled { await self?.discoveryFailed(error.localizedDescription) }
             }
         }
+        // Already-paired HID devices must not wait for legacy discovery's
+        // first-use authorization/initialization before they can send input.
+        if let pairer {
+            await pairer.start(matchers: matchers)
+        } else {
+            let continuation = continuation
+            pairingStartupTask = Task { [weak self] in
+                await BluetoothClassicPairer.prepareRuntime()
+                guard !Task.isCancelled else { return }
+                let pairer = await BluetoothClassicPairer(events: continuation)
+                await self?.startPairer(pairer, matchers: matchers)
+            }
+        }
+    }
+
+    private func startPairer(_ pairer: BluetoothClassicPairer, matchers: [BluetoothHIDMatcher]) async {
+        guard discoveryTask != nil, !Task.isCancelled else { await pairer.stop(); return }
+        self.pairer = pairer
+        await pairer.start(matchers: matchers)
     }
 
     func stopDiscovery() async {
         discoveryTask?.cancel()
         discoveryTask = nil
+        pairingStartupTask?.cancel()
+        pairingStartupTask = nil
         await pairer?.stop()
     }
 
@@ -85,10 +107,12 @@ actor BluetoothHIDTransport: Transport {
         guard let client = HIDDeviceClient(deviceReference: reference) else { return }
         let vendor = UInt16(clamping: await client.vendorID)
         let product = UInt16(clamping: await client.productID)
+        let serial = await client.serialNumber
+        let uniqueID = await client.uniqueID
         guard matchers.contains(where: { $0.matches(vendorID: vendor, productID: product) }),
               let identity = BluetoothHIDMatcher.persistentIdentity(
                 vendorID: vendor, productID: product,
-                serial: await client.serialNumber, uniqueID: await client.uniqueID
+                serial: serial, uniqueID: uniqueID
               ), !Task.isCancelled else { return }
         let id = identityIDs[identity] ?? DeviceID(transport: .bluetoothHID, raw: UUID())
         identityIDs[identity] = id
@@ -96,7 +120,7 @@ actor BluetoothHIDTransport: Transport {
             streamEnded(id, reason: .linkLoss)
             referenceIDs[previous.client.deviceReference] = nil
         }
-        devices[id] = Device(client: client, identity: identity)
+        devices[id] = Device(client: client, identity: identity, address: serial ?? uniqueID)
         referenceIDs[reference] = id
         continuation.yield(.availability(reason: nil))
         continuation.yield(.discovered(id, AdvertisementInfo(
@@ -153,7 +177,15 @@ actor BluetoothHIDTransport: Transport {
         continuation.yield(.ready(id))
     }
 
-    func disconnect(_ id: DeviceID) async { streamEnded(id, reason: .userInitiated) }
+    func disconnect(_ id: DeviceID) async {
+        let address = devices[id]?.address
+        stopInputSubscription(id)
+        if let address { await BluetoothClassicPairer.disconnect(address: address) }
+    }
+
+    // Used by the hardware probe to test report-subscription lifetime without
+    // pretending that a controller was powered off or its radio link was lost.
+    func stopInputSubscription(_ id: DeviceID) { streamEnded(id, reason: .userInitiated) }
 
     private func initialize(_ command: Data, device: Device, id: DeviceID) async -> Bool {
         let token = UUID()

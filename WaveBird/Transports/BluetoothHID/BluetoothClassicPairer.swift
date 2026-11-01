@@ -20,6 +20,15 @@ final class BluetoothClassicPairer: NSObject, @preconcurrency CBCentralManagerDe
     private var reconnectAttempts: [String: Date] = [:]
     private let events: AsyncStream<TransportEvent>.Continuation
 
+    nonisolated static func prepareRuntime() async {
+        // On macOS 27.2 the first legacy inquiry initializes a CoreBluetooth
+        // coordinator with a semaphore wait. Doing that on the GUI thread
+        // deadlocked this app at startup (sampled 2026-11-01).
+        await Task.detached {
+            _ = IOBluetoothDeviceInquiry(delegate: nil)
+        }.value
+    }
+
     init(events: AsyncStream<TransportEvent>.Continuation) {
         self.events = events
         super.init()
@@ -87,6 +96,12 @@ final class BluetoothClassicPairer: NSObject, @preconcurrency CBCentralManagerDe
 
     @objc func connectionComplete(_ device: IOBluetoothDevice, status: IOReturn) {
         if reconnecting == device.addressString { reconnecting = nil }
+    }
+
+    nonisolated static func disconnect(address: String) async {
+        await Task.detached {
+            _ = IOBluetoothDevice(addressString: address)?.closeConnection()
+        }.value
     }
 
     func deviceInquiryDeviceFound(_ sender: IOBluetoothDeviceInquiry, device: IOBluetoothDevice) {

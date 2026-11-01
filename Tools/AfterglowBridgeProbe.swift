@@ -103,7 +103,11 @@ struct AfterglowBridgeProbe {
                 if reports % 100 == 0 {
                     cycles += 1
                     log("\(label) read/resubscribe cycle \(cycles) passed (\(reports) reports)")
-                    await transport.disconnect(id)
+                    if let bluetoothTransport = transport as? BluetoothHIDTransport {
+                        await bluetoothTransport.stopInputSubscription(id)
+                    } else {
+                        await transport.disconnect(id)
+                    }
                     await transport.stopDiscovery()
                     if cycles == 3 {
                         if bluetooth, modes[0x30, default: 0] == 0 {
@@ -169,7 +173,7 @@ struct AfterglowBridgeProbe {
                     passed = true
                     log("PASS: four distinct Bluetooth controllers simultaneously streamed at least 100 decoded full-mode reports each.")
                     if CommandLine.arguments.contains("--monitor") { continue }
-                    for id in identities.keys { await transport.disconnect(id) }
+                    for id in identities.keys { await transport.stopInputSubscription(id) }
                     await transport.stopDiscovery()
                     return
                 }

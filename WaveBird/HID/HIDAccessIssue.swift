@@ -2,8 +2,9 @@ import Foundation
 import IOKit.hid
 import Security
 
-// Why virtual-controller output is blocked. Only ever produced from an
-// observed HIDVirtualDevice init failure — the TCC post-event check alone is
+// Why virtual-controller output is blocked. Missing signing authorization is
+// detectable directly. Permission errors require an observed HIDVirtualDevice
+// init failure — the TCC post-event check alone is
 // not predictive (verified on hardware 2026-07-05: it reports not-granted on
 // a machine where the Accessibility box is ticked and the VHID works), so it
 // is consulted only to pick the more specific message after a failure.

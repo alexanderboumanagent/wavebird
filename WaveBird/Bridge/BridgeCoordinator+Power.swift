@@ -27,6 +27,9 @@ extension BridgeCoordinator {
     func runIdleSweep() async {
         while !Task.isCancelled {
             try? await Task.sleep(for: .seconds(60))
+            // Input-only diagnostics have no output dispatch task to track
+            // activity; keep those subscriptions open while signing is absent.
+            guard hidAccessIssue != .signingRequired else { continue }
             let minutes = (UserDefaults.standard.object(forKey: Self.idleDisconnectKey) as? Int)
                 ?? Self.idleDisconnectDefaultMinutes
             guard minutes > 0 else { continue }            // 0 == Off

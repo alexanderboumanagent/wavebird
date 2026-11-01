@@ -16,12 +16,13 @@ final class BridgeCoordinator {
     /// Cleared when the transport becomes available again.
     var transportUnavailableReasons: [TransportKind: String] = [:]
     var transportUnavailableReason: String? {
-        let reasons = [TransportKind.ble, .usb].compactMap { transportUnavailableReasons[$0] }
+        let reasons = [TransportKind.ble, .usb, .bluetoothHID].compactMap { transportUnavailableReasons[$0] }
         return reasons.isEmpty ? nil : reasons.joined(separator: "\n")
     }
     /// Non-nil when virtual-controller output is blocked. Drives the
-    /// permission banner in the main window and menu bar. Set only by
-    /// failVirtualHID (observed VHID creation failures) and cleared by any
+    /// permission banner in the main window and menu bar. Set when signing
+    /// authorization is absent or failVirtualHID observes a creation failure;
+    /// cleared by any
     /// successful creation (makeVirtualHID, or activateJoyConPair for the
     /// merged pair) — the TCC post-event check is NOT trusted as a
     /// standalone signal (it reports not-granted on machines where the
