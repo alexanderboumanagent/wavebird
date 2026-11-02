@@ -1,11 +1,18 @@
 # WaveBird
 
 **Four Afterglow controllers in Steam:** the [Steam Afterglow Launcher](docs/steam-afterglow.md)
-loads a corrected SDL driver. All four wireless pads are connected, with four
+loads a corrected SDL driver. The test connected all four wireless pads, with four
 standard virtual gamepads. All four independently moved and jumped in a level of
 Lovers in a Dangerous Spacetime; the four-player gameplay test passed.
 Steam needs Input Monitoring and Device Control permission. This route needs no
 separate Apple Developer profile.
+
+**Cross-game target:** unmodified Stick Fight's older controller library does not
+recognize Steam's virtual names. A reversible [temporary compatibility fix](docs/steam-afterglow.md#stick-fight-workaround)
+is available. The permanent path is WaveBird publishing four standard
+DualShock 4 devices directly, using the common identity supported by both inspected
+games. That central profile is prepared; runtime validation awaits Apple's signing
+authorization. See [cross-game output](docs/steam-afterglow.md#cross-game-output).
 
 This fork adds **Bluetooth Classic and USB input for the Turtle Beach Afterglow Wave Wireless
 Controller for Switch 2 (`0E6F:0194`)**. The upstream DMG does not contain this

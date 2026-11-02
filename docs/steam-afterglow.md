@@ -115,7 +115,80 @@ Native macOS GameController originally enumerated zero raw Afterglow controllers
 The separate WaveBird virtual-HID bridge for applications outside this Steam route
 still needs [Apple-approved signing](macos-signing.md).
 
-Primary references: [SDL protocol override](https://wiki.libsdl.org/SDL3/SDL_HINT_GAMECONTROLLERTYPE),
+## Cross-game output
+
+The Steam route is a tested interim path, not a complete cross-game bridge.
+Stick Fight (`674940`) exposes a concrete limit: its bundled InControl library
+does not match Steam's `Microsoft GamePad-N` names. The observed `[InControl]
+Joystick N: "Microsoft GamePad-N"` log is emitted by its unsupported-profile
+branch. Lovers includes a Steam profile for those names; Stick Fight does not.
+Steam already supplies Xbox 360 VID/PID `045E:028E`, so identifying an output as
+Xbox is insufficient for these older name-based profiles. No supported Steam
+virtual-output name/model setting was found. Lovers' assemblies remain unchanged;
+the temporary Stick Fight workaround below modifies only its controller-name records.
+
+The portable target is WaveBird's own system-wide output: each Afterglow Bluetooth
+input feeds a separate standard virtual controller, created before starting a game.
+Both inspected games include a DualShock 4 USB profile for
+`Sony Computer Entertainment Wireless Controller`, with the same face buttons,
+shoulders, stick clicks, sticks, triggers and hat layout. The central DualShock 4
+presentation now uses that older common manufacturer name with `054C:05C4` and
+`Wireless Controller`. Its existing report format remains unchanged. This is a
+static compatibility check, not a runtime gameplay pass for this output mode.
+
+Once an authorized signed build is available, select DualShock 4 once per physical
+controller in WaveBird; the selection and virtual serial are stored per controller,
+not per game. The entitled app now requests exclusive CoreHID ownership of physical
+Afterglow Bluetooth devices before monitoring or initialization. Input-only builds
+and probes remain nonexclusive. Ownership failure is explicit, without falling back
+to competing readers. This path compiles but still needs entitled hardware testing.
+Games with native DS4 support should consume the bridge directly;
+Steam's PlayStation translation must not turn it back into `GamePad-N` for this
+validation. The exact global Steam policy and actual game enumeration still need
+verification on the signed build. Routine radio reconnect and stable player
+assignment across reconnects remain separate validation work.
+
+Required runtime checks are four distinct virtual devices, independent input in
+GameController and SDL, then four-player gameplay in unmodified Lovers and Stick
+Fight. This cannot be completed using the current input-only ad-hoc build. Follow
+the [signing guide](macos-signing.md) for the app's CoreHID entitlement, including
+development on this Mac. Approval is for the app/team, not individual games.
+
+## Stick Fight workaround
+
+`Tools/stickfight-steam-compat.py` provides a temporary local workaround while
+system-wide bridge signing is pending. It recognizes only the inspected macOS
+game build (original assembly SHA-256
+`d0e974f0641d45429fd9ecaf5987f48fc98ae0ed0826dc42410ba8607fff37e2`).
+With Stick Fight closed:
+
+```sh
+python3 Tools/stickfight-steam-compat.py apply
+python3 Tools/stickfight-steam-compat.py check
+# To undo, close Stick Fight and run:
+python3 Tools/stickfight-steam-compat.py restore
+```
+
+The tool preserves a verified original under
+`~/Library/Application Support/WaveBird Afterglow/Backups/StickFight/` outside the
+game bundle. It replaces four legacy names used only by `Xbox360MacProfile` with
+`Microsoft GamePad-1` through `-4`. This temporarily substitutes those four legacy
+aliases; restoring returns the original support. Button mappings, all 6,248 CIL
+method bodies, other metadata streams, file length and offsets remain unchanged.
+All four new user strings carry the required special-character terminal flag.
+The patched SHA-256 is
+`309ffe394c84477caf6bc85905cf0dffc15016c4c53b2d14e18f9f6b1548f833`.
+
+Temporary-file validation passed apply/check/idempotence, byte-exact restore,
+unknown-build refusal and backup preservation. Independent metadata/IL inspection
+confirmed only the four intended records differ. The installed game was backed up,
+patched, and relaunched through the existing corrected Steam session. Gameplay
+verification is pending. Steam game-file verification or an update can restore the
+original; the tool refuses an unrecognized update instead of patching it blindly.
+
+Primary references: [CoreHID exclusive ownership](https://developer.apple.com/documentation/corehid/hiddeviceclient/seizedevice()),
+[InControl DS4 profile](https://github.com/pbhogan/InControl/blob/master/Assets/InControl/Source/Unity/DeviceProfiles/PlayStation4MacUSBProfile.cs),
+[SDL protocol override](https://wiki.libsdl.org/SDL3/SDL_HINT_GAMECONTROLLERTYPE),
 [Switch HID driver](https://github.com/libsdl-org/SDL/blob/ab5541ec5/src/joystick/hidapi/SDL_hidapi_switch.c),
 [SDL3 dynamic API](https://github.com/libsdl-org/SDL/blob/ab5541ec5/src/dynapi/SDL_dynapi.c),
 [Valve's Mac controller instructions](https://help.steampowered.com/en/faqs/view/33E8-5EDF-24E6-4CFB).
