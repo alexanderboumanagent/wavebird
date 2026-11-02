@@ -1,0 +1,50 @@
+--- a/src/joystick/hidapi/SDL_hidapi_switch.c
++++ b/src/joystick/hidapi/SDL_hidapi_switch.c
+@@ -750,8 +750,14 @@
+     }
+ }
+ 
++static bool HasHomeLED(SDL_DriverSwitch_Context *ctx);
++
+ static bool SetHomeLED(SDL_DriverSwitch_Context *ctx, Uint8 brightness)
+ {
++    if (!HasHomeLED(ctx)) {
++        return SDL_Unsupported();
++    }
++
+     Uint8 ucLedIntensity = 0;
+     Uint8 rgucBuffer[4];
+ 
+@@ -1303,6 +1309,11 @@
+ {
+     Uint16 vendor_id = ctx->device->vendor_id;
+     Uint16 product_id = ctx->device->product_id;
++
++    // Afterglow Wave for Switch 2 (Lic3) shuts off on the unsupported 0x38 command.
++    if (vendor_id == 0x0e6f && product_id == 0x0194) {
++        return false;
++    }
+ 
+     // The Power A Nintendo Switch Pro controllers don't have a Home LED
+     if (vendor_id == 0 && product_id == 0) {
+@@ -1865,7 +1876,9 @@
+         // Doesn't have an RGB LED, so don't return SDL_JOYSTICK_CAP_RGB_LED here
+         result |= SDL_JOYSTICK_CAP_RUMBLE;
+         // But has the HOME LED, so treat it like a mono LED
+-        result |= SDL_JOYSTICK_CAP_MONO_LED;
++        if (HasHomeLED(ctx)) {
++            result |= SDL_JOYSTICK_CAP_MONO_LED;
++        }
+     } else if (ctx->m_eControllerType == k_eSwitchDeviceInfoControllerType_JoyConLeft ||
+                ctx->m_eControllerType == k_eSwitchDeviceInfoControllerType_JoyConRight) {
+         result |= SDL_JOYSTICK_CAP_RUMBLE;
+--- a/src/joystick/controller_list.h
++++ b/src/joystick/controller_list.h
+@@ -624,6 +624,7 @@
+ 	{ MAKE_CONTROLLER_ID( 0x0e6f, 0x018b ), k_eControllerType_SwitchInputOnlyController, NULL },  // PDP Afterglow Wave Wired/Wireless Controller for Switch
+ 	{ MAKE_CONTROLLER_ID( 0x0e6f, 0x018c ), k_eControllerType_SwitchProController, "PDP REALMz Wireless Controller" },  // PDP REALMz Wireless Controller for Switch
+ 	{ MAKE_CONTROLLER_ID( 0x0e6f, 0x0193 ), k_eControllerType_Switch2ProController, NULL },  // Turtle Beach Afterglow Wireless RGB Gaming Controller for Nintendo Switch 2 and the Turtle Beach Rematch Wireless RGB Gaming Controller for Nintendo Switch 2
++	{ MAKE_CONTROLLER_ID( 0x0e6f, 0x0194 ), k_eControllerType_SwitchProController, NULL },  // Turtle Beach Afterglow Wave Wireless Controller for Nintendo Switch 2
+ 	{ MAKE_CONTROLLER_ID( 0x0e6f, 0x0196 ), k_eControllerType_Switch2InputOnlyController, NULL },  // Turtle Beach Rematch Wired Controller for Nintendo Switch 2
+ 	{ MAKE_CONTROLLER_ID( 0x0e6f, 0x0197 ), k_eControllerType_Switch2InputOnlyController, NULL },  // Turtle Beach Afterglow Wave Wired Controller for Nintendo Switch 2
+ 	{ MAKE_CONTROLLER_ID( 0x0e6f, 0x0198 ), k_eControllerType_Switch2InputOnlyController, NULL },  // Turtle Beach Afterglow Wired Controller for Switch 2

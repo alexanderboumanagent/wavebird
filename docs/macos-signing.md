@@ -1,9 +1,11 @@
 # Signing the Afterglow fork for virtual gamepad output
 
-For Steam, use the verified [Steam SDL override and launcher](steam-afterglow.md).
-That route does not need your own Apple Developer membership or virtual-HID
-profile. The instructions below apply to the separate system-wide virtual-gamepad
-bridge.
+The [corrected Steam driver and launcher](steam-afterglow.md) uses Steam's existing
+virtual-gamepad output. Four independent gamepads now work in the tested game's
+character selection, with level movement validation pending. This route needs Steam's
+Input Monitoring and Device Control grants, but does not need your own Apple Developer
+membership or virtual-HID profile. The instructions below apply to the separate
+WaveBird virtual-gamepad bridge; signing it does not itself fix radio disconnects.
 
 Bluetooth/USB input capture can run without a virtual-HID entitlement. Publishing
 standard virtual gamepads through CoreHID requires Apple's approval even on the

@@ -1,9 +1,11 @@
 # WaveBird
 
-**Steam with four Afterglow controllers:** the [Steam Afterglow Launcher](docs/steam-afterglow.md)
-uses SDL's protocol override. The actual Steam client has opened all four wireless
-controllers with its Switch HIDAPI driver enabled. This path needs no Apple Developer
-profile; four-player gameplay validation is still pending.
+**Four Afterglow controllers in Steam:** the [Steam Afterglow Launcher](docs/steam-afterglow.md)
+loads a corrected SDL driver. All four wireless pads are connected, with four
+standard virtual gamepads and independent character controls in Lovers in a
+Dangerous Spacetime. The four-player level is open; movement validation is pending.
+Steam needs Input Monitoring and Device Control permission. This route needs no
+separate Apple Developer profile.
 
 This fork adds **Bluetooth Classic and USB input for the Turtle Beach Afterglow Wave Wireless
 Controller for Switch 2 (`0E6F:0194`)**. The upstream DMG does not contain this

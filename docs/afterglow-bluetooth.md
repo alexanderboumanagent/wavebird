@@ -139,10 +139,15 @@ twice; a wall charger avoids that extra USB input device.
   paired and initialized in full mode (8-second foreground-independent check). The fork's virtual
   gamepad output remains blocked by missing Apple-approved signing. No successful
   cross-game or four-player game session is claimed.
-- A separate [Steam-specific solution](steam-afterglow.md) is now verified:
-  SDL's documented protocol override caused the actual Steam client to enable
-  its Switch HIDAPI driver and open all four physical controllers. It does not
-  require signing this fork's virtual-HID output. Game-session validation is pending.
+- A separate [corrected Steam driver](steam-afterglow.md) now keeps four physical
+  controllers connected and exposes four virtual gamepads through Steam. The initial
+  game-launch disconnect was traced to an unsupported Home-light command; the SDL
+  patch suppresses it for this exact model. Steam also needed the user's approved
+  Input Monitoring and Device Control grants to create its output devices. All four
+  pads independently joined and selected characters in Lovers in a Dangerous Spacetime;
+  level movement validation is pending. This route does not require signing this
+  fork's virtual-HID output. Earlier Bluetooth encryption-downgrade rejections required
+  repairing two saved pairings; future power/sleep reconnect reliability is unverified.
 
 Hardware checks, using the production transport/parser:
 
