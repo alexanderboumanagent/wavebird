@@ -5,7 +5,7 @@ import IOKit.hid
 final class AppDelegate: NSObject, NSApplicationDelegate {
     let coordinator = BridgeCoordinator(
         profiles: [GameCubeProfile(), ProControllerProfile(), JoyConProfile(side: .left), JoyConProfile(side: .right), AfterglowWaveProfile()],
-        transports: [BLETransport(), USBTransport(), BluetoothHIDTransport()]
+        transports: [BLETransport(), USBTransport(), BluetoothHIDTransport(seizeDevices: HIDAccessIssue.hasVirtualHIDEntitlement)]
     )
     let launch = LaunchAtLoginService()
 

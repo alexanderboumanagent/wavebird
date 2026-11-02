@@ -21,7 +21,10 @@ struct DualShock4Output: HIDOutputProfile, HIDOutputSession {
     let vendorID: UInt16 = 0x054C
     let productID: UInt16 = 0x05C4
     let productName = "Wireless Controller"
-    let manufacturer: String? = "Sony Interactive Entertainment"
+    // Older InControl USB profiles match this original CUH-ZCT1 manufacturer.
+    // Verified in Lovers and Stick Fight assemblies on 2026-11-01: Lovers
+    // accepts only this name; Stick Fight accepts both Sony manufacturer names.
+    let manufacturer: String? = "Sony Computer Entertainment"
     let versionNumber: UInt16 = 0x0100
 
     var descriptor: Data { Self.descriptorBytes }

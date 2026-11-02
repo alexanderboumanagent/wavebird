@@ -281,9 +281,10 @@ extension BridgeCoordinator {
     }
 
     func hidTransport(for record: DeviceRecord) -> HIDDeviceTransport {
-        // Always use .usb — BLE-transport virtual devices with output reports trigger
-        // kIOReturnNoPower (IOServiceOpen:0xe00002e2). The transport hint is independent
-        // of the real controller's connection and has no effect on input delivery.
+        // This describes the emulated service, not the physical controller's
+        // Bluetooth link. Report layout is selected by the output profile.
+        // IOServiceOpen 0xe00002e2 is NotPermitted, so it cannot establish a
+        // transport/power failure; signing and user authorization are separate.
         return .virtual
     }
 

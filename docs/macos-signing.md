@@ -33,7 +33,9 @@ development rather than relying on an ad-hoc signature for permission continuity
    Keep this identifier consistent with `Tools/build-local.sh`.
 3. Request `com.apple.developer.hid.virtual.device`. Apple's general process is
    Certificates, Identifiers & Profiles → Identifiers → the App ID → Capability
-   Requests. If Virtual HID is not offered there, ask Apple Developer Support
+   Requests. Look for **HID Virtual Device**, the CoreHID capability, rather than
+   the similarly named, deprecated DriverKit virtual-device entitlement.
+   If Virtual HID is not offered there, ask Apple Developer Support
    where to submit this exact entitlement request; do not select unrelated
    DriverKit, keyboard, or system-extension entitlements as substitutes.
 4. Ask for approval covering Mac development first and Developer ID distribution
@@ -89,6 +91,12 @@ and signs the app. It deliberately does not attach a restricted entitlement to a
 ad-hoc signature. A development profile only authorizes its registered Macs; use
 an appropriately approved Developer ID signing/profile workflow for distribution.
 No certificate, private key, or provisioning profile belongs in Git.
+
+Approval and signing apply to the bridge app, not each game or controller. Players
+installing a correctly signed and notarized Developer ID distribution do not each
+need an Apple Developer account. Alternatively, an upstream release incorporating
+the Afterglow backend could be distributed by WaveBird's authorized maintainer;
+their existing certificate/profile cannot simply be reused to sign this fork.
 
 ## Completion checks
 

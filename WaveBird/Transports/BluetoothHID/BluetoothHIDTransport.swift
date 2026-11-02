@@ -1,15 +1,28 @@
 import CoreHID
 import Foundation
 
-enum BluetoothHIDTransportError: Error {
+enum BluetoothHIDTransportError: Error, LocalizedError, CustomStringConvertible {
     case unknownDevice
     case fourControllersAlreadyConnected
+    case exclusiveAccessFailed(String)
+
+    var description: String {
+        switch self {
+        case .unknownDevice: "Bluetooth HID device is unavailable."
+        case .fourControllersAlreadyConnected: "Four Bluetooth controllers are already connected."
+        case .exclusiveAccessFailed(let reason):
+            "Could not take exclusive ownership of the Bluetooth controller. Close other controller apps and reconnect. \(reason)"
+        }
+    }
+
+    var errorDescription: String? { description }
 }
 
 actor BluetoothHIDTransport: Transport {
     nonisolated let kind: TransportKind = .bluetoothHID
     nonisolated let events: AsyncStream<TransportEvent>
     private nonisolated let continuation: AsyncStream<TransportEvent>.Continuation
+    private let seizeDevices: Bool
     private let manager = HIDDeviceManager()
     private var pairer: BluetoothClassicPairer?
     private var pairingStartupTask: Task<Void, Never>?
@@ -31,12 +44,14 @@ actor BluetoothHIDTransport: Transport {
         let client: HIDDeviceClient
         let identity: String
         let address: String?
+        var hasExclusiveAccess = false
     }
 
-    init() {
+    init(seizeDevices: Bool = false) {
         let (stream, continuation) = AsyncStream.makeStream(of: TransportEvent.self, bufferingPolicy: .bufferingNewest(256))
         events = stream
         self.continuation = continuation
+        self.seizeDevices = seizeDevices
     }
 
     deinit {
@@ -135,6 +150,22 @@ actor BluetoothHIDTransport: Transport {
             throw BluetoothHIDTransportError.fourControllersAlreadyConnected
         }
         playerSlots[id] = slot
+        if seizeDevices, !device.hasExclusiveAccess {
+            // Apple requires seizing before any outstanding monitor or report
+            // requests. Ownership lasts until this HIDDeviceClient deinitializes.
+            // https://developer.apple.com/documentation/corehid/hiddeviceclient/seizedevice()
+            do {
+                try await device.client.seizeDevice()
+            } catch {
+                playerSlots[id] = nil
+                throw BluetoothHIDTransportError.exclusiveAccessFailed(error.localizedDescription)
+            }
+            guard devices[id]?.client == device.client else {
+                playerSlots[id] = nil
+                throw BluetoothHIDTransportError.unknownDevice
+            }
+            devices[id]?.hasExclusiveAccess = true
+        }
         continuation.yield(.connecting(id))
         let notifications = await device.client.monitorNotifications(
             reportIDsToMonitor: [HIDReportID.allReports], elementsToMonitor: []
@@ -223,6 +254,9 @@ actor BluetoothHIDTransport: Transport {
 
     func send(_ payload: Data, reportID: UInt8?, to id: DeviceID) async throws {
         guard let device = devices[id] else { throw BluetoothHIDTransportError.unknownDevice }
+        guard !seizeDevices || device.hasExclusiveAccess else {
+            throw BluetoothHIDTransportError.exclusiveAccessFailed("The device has not been acquired exclusively.")
+        }
         try await device.client.dispatchSetReportRequest(type: .output,
             id: reportID.flatMap { HIDReportID(rawValue: $0) }, data: payload, timeout: .seconds(1))
     }
