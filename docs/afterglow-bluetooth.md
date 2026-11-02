@@ -133,19 +133,20 @@ twice; a wall charger avoids that extra USB input device.
 - The installed `WaveBird Afterglow.app` displayed all four wireless controllers
   connected after the user tapped Home. Bluetooth discovery was verified running
   after refreshing the rebuilt diagnostic app's existing Bluetooth grant.
-- Physical power-off, sleep/wake, and per-player output isolation inside a game:
-  **pending hardware/game tests**.
+- Physical power-off and sleep/wake: **pending hardware tests**. The unsigned
+  WaveBird fork's own virtual output remains untested; Steam output passed below.
 - GameController still reported **zero native controllers** after all four were
   paired and initialized in full mode (8-second foreground-independent check). The fork's virtual
-  gamepad output remains blocked by missing Apple-approved signing. No successful
-  cross-game or four-player game session is claimed.
+  gamepad output remains blocked by missing Apple-approved signing. This raw-input
+  result is separate from Steam's successful virtual-output game test below.
 - A separate [corrected Steam driver](steam-afterglow.md) now keeps four physical
   controllers connected and exposes four virtual gamepads through Steam. The initial
   game-launch disconnect was traced to an unsupported Home-light command; the SDL
   patch suppresses it for this exact model. Steam also needed the user's approved
   Input Monitoring and Device Control grants to create its output devices. All four
-  pads independently joined and selected characters in Lovers in a Dangerous Spacetime;
-  level movement validation is pending. This route does not require signing this
+  pads independently joined and selected characters in Lovers in a Dangerous Spacetime.
+  The user then confirmed independent movement and jumping for all four in a level;
+  the four-player gameplay test passed. This route does not require signing this
   fork's virtual-HID output. Earlier Bluetooth encryption-downgrade rejections required
   repairing two saved pairings; future power/sleep reconnect reliability is unverified.
 
@@ -162,7 +163,8 @@ The four-input check requires four actual controllers, verifies distinct identit
 and simultaneous decoded reports, and logs meaningful changes per controller. It
 does not create a virtual gamepad or substitute for game-output validation.
 
-For game output, complete [Apple signing setup](macos-signing.md), then run the
+For the tested Steam output, use the [Steam launcher](steam-afterglow.md). For
+WaveBird's own virtual output, complete [Apple signing setup](macos-signing.md), then run the
 signed app and `swift Tools/GameControllerProbe.swift`. Verify native
 GameController, SDL and Steam games, including a game that supports four local
 players. Game-specific controller and player-count limits still apply.

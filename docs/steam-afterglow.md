@@ -3,8 +3,9 @@
 Tested on 2026-11-01 with four Turtle Beach Afterglow Wave Wireless Controllers
 for Switch 2 (`0E6F:0194`), macOS 27.2, Steam client 1792618285.
 
-**Four Bluetooth links, four virtual gamepads, and four independent players in
-character selection have passed. In-level movement verification is pending.**
+**The four-player wireless gameplay test passed.** All four controllers joined
+Lovers in a Dangerous Spacetime and independently moved and jumped in its tutorial
+level, confirmed by the user after four characters were observed in the running level.
 The installed Steam Afterglow Launcher includes the corrected SDL driver and a
 compatibility check. No separate Apple Developer membership/profile is needed
 for this Steam route.
@@ -100,7 +101,8 @@ Steam library without launching Steam:
   Lovers in a Dangerous Spacetime (`252110`).
 - Four distinct virtual output names, `GamePad-1` through `GamePad-4`, were present.
 - The game displayed four selected players. The user confirmed all four controllers
-  changed their own characters independently. In-level movement is still pending.
+  changed their own characters independently, then independently moved and jumped
+  in the tutorial level. The four-player gameplay test passed.
 - Two failed saved pairings were replaced individually. Some earlier reconnect
   attempts logged `Encryption mode downgraded ... from 2 to 1. Disconnecting device.`
   Other game-launch drops used a different Bluetooth/HID status. The encryption error

@@ -1,8 +1,8 @@
 # Signing the Afterglow fork for virtual gamepad output
 
 The [corrected Steam driver and launcher](steam-afterglow.md) uses Steam's existing
-virtual-gamepad output. Four independent gamepads now work in the tested game's
-character selection, with level movement validation pending. This route needs Steam's
+virtual-gamepad output. Four wireless controllers passed independent movement and
+jump tests in a level of Lovers in a Dangerous Spacetime. This route needs Steam's
 Input Monitoring and Device Control grants, but does not need your own Apple Developer
 membership or virtual-HID profile. The instructions below apply to the separate
 WaveBird virtual-gamepad bridge; signing it does not itself fix radio disconnects.

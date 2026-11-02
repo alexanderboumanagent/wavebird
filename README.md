@@ -2,8 +2,8 @@
 
 **Four Afterglow controllers in Steam:** the [Steam Afterglow Launcher](docs/steam-afterglow.md)
 loads a corrected SDL driver. All four wireless pads are connected, with four
-standard virtual gamepads and independent character controls in Lovers in a
-Dangerous Spacetime. The four-player level is open; movement validation is pending.
+standard virtual gamepads. All four independently moved and jumped in a level of
+Lovers in a Dangerous Spacetime; the four-player gameplay test passed.
 Steam needs Input Monitoring and Device Control permission. This route needs no
 separate Apple Developer profile.
 
