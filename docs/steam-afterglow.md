@@ -182,8 +182,12 @@ The patched SHA-256 is
 Temporary-file validation passed apply/check/idempotence, byte-exact restore,
 unknown-build refusal and backup preservation. Independent metadata/IL inspection
 confirmed only the four intended records differ. The installed game was backed up,
-patched, and relaunched through the existing corrected Steam session. Gameplay
-verification is pending. Steam game-file verification or an update can restore the
+patched, and relaunched through the existing corrected Steam session. The user
+confirmed independent movement and jumping on three controllers. After waking the
+fourth with Home, all four saved Bluetooth connections and four distinct virtual
+outputs were present; Unity no longer logged any Steam GamePad as unsupported.
+Independent four-player gameplay verification is pending. Steam game-file
+verification or an update can restore the
 original; the tool refuses an unrecognized update instead of patching it blindly.
 
 Primary references: [CoreHID exclusive ownership](https://developer.apple.com/documentation/corehid/hiddeviceclient/seizedevice()),
