@@ -3,7 +3,9 @@
 **Four Afterglow controllers in Steam:** the [Steam Afterglow Launcher](docs/steam-afterglow.md)
 loads a corrected SDL driver. The test connected all four wireless pads, with four
 standard virtual gamepads. All four independently moved and jumped in a level of
-Lovers in a Dangerous Spacetime; the four-player gameplay test passed.
+Lovers in a Dangerous Spacetime; the four-player gameplay test passed. All four
+also passed independent movement and jump checks in Stick Fight with the
+[temporary compatibility fix](docs/steam-afterglow.md#stick-fight-workaround).
 Steam needs Input Monitoring and Device Control permission. This route needs no
 separate Apple Developer profile.
 

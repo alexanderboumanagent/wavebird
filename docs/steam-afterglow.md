@@ -186,9 +186,11 @@ patched, and relaunched through the existing corrected Steam session. The user
 confirmed independent movement and jumping on three controllers. After waking the
 fourth with Home, all four saved Bluetooth connections and four distinct virtual
 outputs were present; Unity no longer logged any Steam GamePad as unsupported.
-Independent four-player gameplay verification is pending. Steam game-file
-verification or an update can restore the
-original; the tool refuses an unrecognized update instead of patching it blindly.
+The user then confirmed that all four controllers independently controlled their
+own characters, including movement and jumping. **The four-player Stick Fight
+gameplay test passed** (confirmed by the user on 2026-11-03).
+Steam game-file verification or an update can restore the original; the tool
+refuses an unrecognized update instead of patching it blindly.
 
 Primary references: [CoreHID exclusive ownership](https://developer.apple.com/documentation/corehid/hiddeviceclient/seizedevice()),
 [InControl DS4 profile](https://github.com/pbhogan/InControl/blob/master/Assets/InControl/Source/Unity/DeviceProfiles/PlayStation4MacUSBProfile.cs),
